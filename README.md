@@ -19,7 +19,46 @@ pip install nightjar
 
 ## Usage
 
-To use this package, you can import the package and use it as follows:
+### Example
+
+Let's see the usage of this package with an example.
+
+```python
+from typing import ClassVar
+
+from nightjar import AutoModule, BaseConifg, BaseModule
+
+
+class VehicleConfig(BaseConifg, dispatch=["type"]):
+    type: ClassVar[str]
+
+
+class Vehicle(BaseModule):
+    config: VehicleConfig
+
+
+class AutoVehicle(AutoModule):
+    def __new__(cls, config: VehicleConfig) -> Vehicle:
+        return super().__new__(cls, config)
+
+
+class CarConfig(VehicleConfig):
+    type: ClassVar[str] = "car"
+
+
+class Car(Vehicle):
+    config: CarConfig
+
+
+class VanConfig(VehicleConfig):
+    type: ClassVar[str] = "van"
+
+
+class Van(Vehicle):
+    config: VanConfig
+```
+
+### Explanation
 
 ```mermaid
 classDiagram
@@ -64,42 +103,7 @@ classDiagram
     VehicleConfig <|-- VanConfig
     Vehicle <|-- Car
     Vehicle <|-- Van
-```python
-from typing import ClassVar
-
-from nightjar import AutoModule, BaseConifg, BaseModule
-
-
-class VehicleConfig(BaseConifg, dispatch=["type"]):
-    type: ClassVar[str]
-
-
-class Vehicle(BaseModule):
-    config: VehicleConfig
-
-
-class AutoVehicle(AutoModule):
-    def __new__(cls, config: VehicleConfig) -> Vehicle:
-        return super().__new__(cls, config)
-
-
-class CarConfig(VehicleConfig):
-    type: ClassVar[str] = "car"
-
-
-class Car(Vehicle):
-    config: CarConfig
-
-
-class VanConfig(VehicleConfig):
-    type: ClassVar[str] = "van"
-
-
-class Van(Vehicle):
-    config: VanConfig
 ```
-
-### Explanation
 
 This package provides a base class `BaseModule` that can be subclassed to create different types of objects. Each object type is defined by a configuration class that inherits from `BaseConfig`. The `AutoModule` class is used to automatically create instances of the correct object type based on the configuration. The `dispatch` attribute of the configuration class is used to specify the static attribute that determines the object type.
 
