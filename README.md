@@ -7,7 +7,7 @@
 
 ## Description
 
-This project is a Python package that ...
+This project is a Python package that provides a simple way to create objects of different types based on a configuration object. The package is inspired by how `huggingface/transformers` package creates different types of models based on a configuration object. The package provides a base class `BaseModule` that can be subclassed to create different class types. Each class type is defined by a configuration class that inherits from `BaseConfig`. The `AutoModule` class is used to automatically create instances of the correct object type based on the configuration. The `dispatch` attribute of the configuration class is used to specify the static attribute that determines the object type.
 
 ## Installation
 
@@ -21,6 +21,49 @@ pip install nightjar
 
 To use this package, you can import the package and use it as follows:
 
+```mermaid
+classDiagram
+    class BaseConfig {
+        <<abstract>>
+        +dispatch: ClassVar[str | List[str]]
+        +from_dict(cls, data: Dict[str, Any]) -> BaseConfig
+        +to_dict(self) -> Dict[str, Any]
+    }
+    class BaseModule {
+        <<abstract>>
+        +config: BaseConfig
+    }
+    class AutoModule {
+        +__new__(cls, config: BaseConfig) -> BaseModule
+    }
+    class VehicleConfig {
+        +type: ClassVar[str]
+    }
+    class Vehicle {
+        +config: VehicleConfig
+    }
+    class AutoVehicle {
+        +__new__(cls, config: VehicleConfig) -> Vehicle
+    }
+    class CarConfig {
+        +type: ClassVar[str] = "car"
+    }
+    class Car {
+        +config: CarConfig
+    }
+    class VanConfig {
+        +type: ClassVar[str] = "van"
+    }
+    class Van {
+        +config: VanConfig
+    }
+    BaseConfig <|-- VehicleConfig
+    BaseModule <|-- Vehicle
+    AutoModule <|-- AutoVehicle
+    VehicleConfig <|-- CarConfig
+    VehicleConfig <|-- VanConfig
+    Vehicle <|-- Car
+    Vehicle <|-- Van
 ```python
 from typing import ClassVar
 
