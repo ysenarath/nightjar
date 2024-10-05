@@ -38,3 +38,6 @@ config = VehicleConfig.from_dict({"type": "car"})
 car = AutoVehicle(config)
 # Now you can access the config object
 assert car.config.type == "car", f"expected 'car', got '{car.config.type}'"
+
+print(type(car))
+# <class '__main__.Car'>
