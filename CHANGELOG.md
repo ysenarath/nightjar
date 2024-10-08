@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated README.md
 
+## [0.0.3] - 2024-10-08
+### Changed
+- Refactor BaseConfig
+
 <!-- future template
 ## [0.0.X] - YYYY-MM-DD
 ### Added
