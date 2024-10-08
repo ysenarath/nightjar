@@ -1,9 +1,9 @@
 from typing import ClassVar
 
-from nightjar import AutoModule, BaseConifg, BaseModule
+from nightjar import AutoModule, BaseConfig, BaseModule
 
 
-class VehicleConfig(BaseConifg, dispatch=["type"]):
+class VehicleConfig(BaseConfig, dispatch=["type"]):
     type: ClassVar[str]
 
 

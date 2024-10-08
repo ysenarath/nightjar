@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from nightjar import AutoModule, BaseConifg, BaseModule
+from nightjar import AutoModule, BaseConfig, BaseModule
 
 
-class ModelConfig(BaseConifg, dispatch=["type"]):
+class ModelConfig(BaseConfig, dispatch=["type"]):
     type: ClassVar[str]
 
 
