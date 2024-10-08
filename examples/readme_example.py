@@ -32,9 +32,11 @@ class Van(Vehicle):
     config: VanConfig
 
 
-# use from_dict method to create a configuration object from a dictionary this will automatically create the correct jar config.
+# use from_dict method to create a configuration object from a dictionary this
+#   will automatically create the correct jar config.
 config = VehicleConfig.from_dict({"type": "car"})
-# Now you can create a car object using the configuration object with Auto* object
+# Now you can create a car object using the configuration object with Auto*
+#   object
 car = AutoVehicle(config)
 # Now you can access the config object
 assert car.config.type == "car", f"expected 'car', got '{car.config.type}'"
