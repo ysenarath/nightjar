@@ -1,10 +1,10 @@
-from nightjar.base import AutoModule, BaseConifg, BaseModule
+from nightjar.base import AutoModule, BaseConfig, BaseModule
 
 __version__ = "0.0.2"
 
 __all__ = [
     "AutoModule",
-    "BaseConifg",
+    "BaseConfig",
     "BaseModule",
     # fancy names for above classes in case you want to use them
     "Jar",
@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-class JarConfig(BaseConifg): ...
+class JarConfig(BaseConfig): ...
 
 
 class Jar(BaseModule): ...

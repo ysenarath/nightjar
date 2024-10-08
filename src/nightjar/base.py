@@ -12,7 +12,7 @@ from nightjar.types import DispatchRegistry, from_dict, to_dict
 
 __all__ = [
     "AttributeMap",
-    "BaseConifg",
+    "BaseConfig",
     "BaseModule",
 ]
 
@@ -64,13 +64,13 @@ class AttributeMap(Mapping, metaclass=AttributeMapMeta):
         return from_dict(cls, data)
 
 
-class BaseConifg(AttributeMap): ...
+class BaseConfig(AttributeMap): ...
 
 
 class BaseModule:
-    config: BaseConifg
+    config: BaseConfig
 
-    def __init__(self, config: BaseConifg) -> None:
+    def __init__(self, config: BaseConfig) -> None:
         super().__init__()
         self.config = config
         self.__post_init__()
@@ -81,8 +81,8 @@ class BaseModule:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         # read annotation from class
-        config_class = get_annotations(cls).get("config", BaseConifg)
-        if config_class is BaseConifg:
+        config_class = get_annotations(cls).get("config", BaseConfig)
+        if config_class is BaseConfig:
             return
         AutoModule.dispatch[config_class] = cls
 
