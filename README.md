@@ -1,124 +1,102 @@
-# Nightjar
+# 🦅 Nightjar
 
 [![PyPI version](https://badge.fury.io/py/nightjar.svg)](https://badge.fury.io/py/nightjar) 
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/nightjar)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/nightjar)
 ![GitHub](https://img.shields.io/github/license/ysenarath/nightjar)
 
-## Description
+## 🌟 Simplify Your Python Object Creation
 
-This project is a Python package that provides a simple way to create objects of different types based on a configuration object. The package is inspired by how `huggingface/transformers` package creates different types of models based on a configuration object. The package provides a base class `BaseModule` that can be subclassed to create different class types. Each class type is defined by a configuration class that inherits from `BaseConfig`. The `AutoModule` class is used to automatically create instances of the correct object type based on the configuration. The `dispatch` attribute of the configuration class is used to specify the static attribute that determines the object type.
+Nightjar is a powerful Python package that brings the flexibility of configuration-based object creation to your projects. Inspired by the `huggingface/transformers` package, Nightjar allows you to effortlessly create and manage different types of objects based on simple configuration files.
 
-## Installation
+## 🚀 Features
 
-To install this package, run the following command:
+- **Dynamic Object Creation**: Create objects on-the-fly based on configuration
+- **Type-Safe**: Leverage Python's type hinting for safer code
+- **Flexible**: Easily extend and customize for your specific needs
+- **Automated**: Let Nightjar handle the object instantiation logic for you
+- **Standardized**: Bring consistency to your configuration-driven code
+- **Compatible**: Jar* objects provide syntactic sugar for easy integration with existing projects
+
+## 🛠 Installation
+
+Get started with Nightjar in seconds:
 
 ```bash
 pip install nightjar
 ```
 
-## Usage
+## 🏁 Quick Start
 
-### Example
-
-Let's see the usage of this package with an example.
+Here's a taste of how Nightjar can simplify your code:
 
 ```python
-from typing import ClassVar
+from nightjar import AutoModule, BaseConfig, BaseModule
 
-from nightjar import AutoModule, BaseConifg, BaseModule
-
-
-class VehicleConfig(BaseConifg, dispatch=["type"]):
-    type: ClassVar[str]
-
+class VehicleConfig(BaseConfig, dispatch=["type"]):
+    type: str
 
 class Vehicle(BaseModule):
     config: VehicleConfig
 
-
-class AutoVehicle(AutoModule):
-    def __new__(cls, config: VehicleConfig) -> Vehicle:
-        return super().__new__(cls, config)
-
-
-class CarConfig(VehicleConfig):
-    type: ClassVar[str] = "car"
-
-
 class Car(Vehicle):
-    config: CarConfig
-
-
-class VanConfig(VehicleConfig):
-    type: ClassVar[str] = "van"
-
+    config: VehicleConfig
 
 class Van(Vehicle):
     config: VanConfig
+
+# Create a vehicle based on configuration
+config = VehicleConfig.from_dict({"type": "car"})
+vehicle = AutoModule(config)
+
+print(type(vehicle))  # <class '__main__.Car'>
 ```
 
-### Explanation
+## 🧩 Jar* Objects: Syntactic Sugar for Seamless Integration
 
-```mermaid
-classDiagram
-    class BaseConfig {
-        <<abstract>>
-        +dispatch: ClassVar[str | List[str]]
-        +from_dict(cls, data: Dict[str, Any]) -> BaseConfig
-        +to_dict(self) -> Dict[str, Any]
-    }
-    class BaseModule {
-        <<abstract>>
-        +config: BaseConfig
-    }
-    class AutoModule {
-        +__new__(cls, config: BaseConfig) -> BaseModule
-    }
-    class VehicleConfig {
-        +type: ClassVar[str]
-    }
-    class Vehicle {
-        +config: VehicleConfig
-    }
-    class AutoVehicle {
-        +__new__(cls, config: VehicleConfig) -> Vehicle
-    }
-    class CarConfig {
-        +type: ClassVar[str] = "car"
-    }
-    class Car {
-        +config: CarConfig
-    }
-    class VanConfig {
-        +type: ClassVar[str] = "van"
-    }
-    class Van {
-        +config: VanConfig
-    }
-    BaseConfig <|-- VehicleConfig
-    BaseModule <|-- Vehicle
-    AutoModule <|-- AutoVehicle
-    VehicleConfig <|-- CarConfig
-    VehicleConfig <|-- VanConfig
-    Vehicle <|-- Car
-    Vehicle <|-- Van
-```
+Nightjar introduces Jar* objects (like AutoJar, BaseJar) as syntactic sugar to enhance compatibility with existing projects. These objects are especially useful when BaseModule and other class objects are already defined in your project or when using frameworks like Pydantic.
 
-This package provides a base class `BaseModule` that can be subclassed to create different types of objects. Each object type is defined by a configuration class that inherits from `BaseConfig`. The `AutoModule` class is used to automatically create instances of the correct object type based on the configuration. The `dispatch` attribute of the configuration class is used to specify the static attribute that determines the object type.
-
-`AutoModule` is a generic class that takes the configuration object as init argument and returns an instance of the correct object type. The `__new__` method is used to create the correct object type based on the configuration. It is not necessary to define the `__new__` method in the subclass of `AutoModule` or to subclass `AutoModule` at all. The `AutoModule` class can be used directly to create instances of the correct object type. However, subclassing `AutoModule` can be useful to add additional functionality or to customize the creation of objects and for type hinting.
+For example:
 
 ```python
-# use from_dict method to create a configuration object from a dictionary this will automatically create the correct jar config.
-config = VehicleConfig.from_dict({"type": "car"})
-# Now you can create a car object using the configuration object with Auto* object
-car = AutoVehicle(config)
-# Now you can access the config object
-assert car.config.type == "car", f"expected 'car', got '{car.config.type}'"
+from nightjar import AutoJar, BaseJar
+
+# Use BaseJar instead of BaseModule if you already have a BaseModule in your project
+class Vehicle(BaseJar):
+    config: VehicleConfig
+
+# Use AutoJar instead of AutoModule for consistency
+vehicle = AutoJar(config)
 ```
 
-You could use `AutoJar`, `Jar`, `JarConfig` instead of `AutoModule`, `BaseModule`, `BaseConfig` respectively if you prefer.
+This flexibility allows Nightjar to integrate smoothly with your existing codebase without naming conflicts.
 
-## License
-Please see the [MIT License](LICENSE) file for details.
+## 🌈 Use Cases
+
+Nightjar shines in various scenarios:
+
+- **Machine Learning Pipelines**: Dynamically select and configure models
+- **Plugin Systems**: Easily manage and load different plugins
+- **Game Development**: Create game objects based on configuration files
+- **Web Frameworks**: Dynamically instantiate controllers or middleware
+- **IoT Systems**: Configure and manage different types of devices
+
+## 📘 Documentation
+
+For more detailed information, check out our [full documentation](https://github.com/ysenarath/nightjar/wiki).
+
+## 🤝 Contributing
+
+We welcome contributions! Check out our [Contribution Guide](CONTRIBUTING.md) to get started.
+
+## 💬 Support
+
+Need help? Have questions? Join our [Discord community](https://discord.gg/nightjar) or open an [issue](https://github.com/ysenarath/nightjar/issues).
+
+## 📄 License
+
+Nightjar is released under the [MIT License](LICENSE).
+
+---
+
+Built with ❤️ by the Nightjar team. Happy coding! 🎉
