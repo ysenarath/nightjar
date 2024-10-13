@@ -3,6 +3,7 @@ import sys
 from dataclasses import fields, is_dataclass
 from datetime import date, datetime, time
 from pathlib import Path
+from types import UnionType
 from typing import (
     Any,
     ClassVar,
@@ -165,7 +166,7 @@ def from_dict(
         typ = eval(typ, globalns, localns)  # noqa: S307
     if isinstance(typ, ForwardRef):
         typ = evaluate_forwardref(typ, globalns=globalns, localns=localns)
-    if typ is Union:
+    if typ is UnionType or typ is Union:
         for subtype in type_args:
             try:
                 return from_dict(subtype, val)
