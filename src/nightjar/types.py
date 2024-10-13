@@ -262,7 +262,7 @@ def from_dict(
             msg = f"could not convert to dict of type {typ}"
             raise ValueError(msg)
         ktype, vtype = Any, Any
-        if len(type_args) == 2:
+        if len(type_args) == 2:  # noqa: PLR2004
             ktype, vtype = type_args
         return {
             from_dict(ktype, k, globalns=globalns, localns=localns): from_dict(
