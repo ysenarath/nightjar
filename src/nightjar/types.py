@@ -3,7 +3,6 @@ import sys
 from dataclasses import fields, is_dataclass
 from datetime import date, datetime, time
 from pathlib import Path
-from types import UnionType
 from typing import (
     Any,
     ClassVar,
@@ -21,6 +20,11 @@ from typing import (
     get_type_hints,
     runtime_checkable,
 )
+
+try:
+    from types import UnionType
+except ImportError:
+    from typing import Union as UnionType
 
 from typing_extensions import Protocol
 
