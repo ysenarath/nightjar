@@ -52,6 +52,28 @@ vehicle = AutoModule(config)
 print(type(vehicle))  # <class '__main__.Car'>
 ```
 
+## 🔀 Understanding Dispatch
+
+Dispatch is a key concept in Nightjar that enables dynamic object creation and handling based on configuration. Here's what you need to know:
+
+1. **Purpose**: Dispatch automatically selects and creates the appropriate object type based on the provided configuration.
+
+2. **How it works**: 
+   - In your configuration class, specify a "dispatch" parameter. This determines which attribute(s) will decide the specific object type to create.
+   - Example: `class VehicleConfig(BaseConfig, dispatch=["type"]):`
+
+3. **Object Creation**: 
+   - `AutoModule` uses the dispatch mechanism to create the right object based on the configuration.
+   - It maintains a dispatch dictionary mapping configuration classes to module classes.
+
+4. **Serialization and Deserialization**: 
+   - Dispatch is also used when converting objects to and from dictionaries, ensuring consistent handling of your custom types.
+
+5. **Flexibility**: 
+   - This mechanism makes Nightjar highly adaptable. You can easily add new object types by creating new configuration and module classes, without changing the core logic.
+
+Dispatch is what gives Nightjar its power, allowing for truly dynamic, configuration-driven object handling in your projects.
+
 ## 🧩 Jar* Objects: Syntactic Sugar for Seamless Integration
 
 Nightjar introduces Jar* objects (like AutoJar, BaseJar) as syntactic sugar to enhance compatibility with existing projects. These objects are especially useful when BaseModule and other class objects are already defined in your project or when using frameworks like Pydantic.
