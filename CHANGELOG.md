@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactor BaseConfig
 
+## [0.0.4] - 2024-10-13
+### Changed
+- Add support for UnionType when converting dict to AttrDict object
+
 <!-- future template
 ## [0.0.X] - YYYY-MM-DD
 ### Added
