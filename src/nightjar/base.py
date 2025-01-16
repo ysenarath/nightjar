@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from collections.abc import Mapping
 from dataclasses import dataclass, fields, is_dataclass
-from typing import Any, ClassVar, Dict, Generator, Type
+from typing import Any, ClassVar, Dict, Generator, Generic, Type, TypeVar
 
 from typing_extensions import Self, dataclass_transform
 
@@ -16,19 +16,24 @@ __all__ = [
     "BaseModule",
 ]
 
+K = TypeVar("K")
+V = TypeVar("V")
+
 
 @dataclass_transform()
 class AttributeMapMeta(abc.ABCMeta):
+    _dispatch_registry: DispatchRegistry
+
     def __new__(
-        cls,
-        __name: str,
-        __bases: tuple[type, ...],
-        __namespace: dict[str, Any],
+        mcls,  # noqa: N804
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
         /,
         **kwargs,
     ):
         dispatch = kwargs.pop("dispatch", None)
-        obj = super().__new__(cls, __name, __bases, __namespace)
+        obj = super().__new__(mcls, name, bases, namespace)
         obj = dataclass(**kwargs)(obj)
         if hasattr(obj, "_dispatch_registry"):
             obj._dispatch_registry.register(obj)
@@ -37,7 +42,7 @@ class AttributeMapMeta(abc.ABCMeta):
         return obj
 
 
-class AttributeMap(Mapping, metaclass=AttributeMapMeta):
+class AttributeMap(Mapping[K, V], Generic[K, V], metaclass=AttributeMapMeta):
     def __getitem__(self, __key: Any) -> Any:
         if hasattr(self, __key):
             return getattr(self, __key)
@@ -45,10 +50,11 @@ class AttributeMap(Mapping, metaclass=AttributeMapMeta):
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         field_types = {field.name: field.type for field in fields(self)}
-        __type = field_types[__name]
-        if is_dataclass(__type) and not isinstance(__value, __type):
-            __value = __type(**__value)
-        return super().__setattr__(__name, __value)
+        cls = field_types[__name]
+        val = __value
+        if is_dataclass(cls) and not isinstance(val, cls):
+            val = cls(**__value)
+        return super().__setattr__(__name, val)
 
     def __iter__(self) -> Generator[str, None, None]:
         yield from to_dict(self)
@@ -64,7 +70,8 @@ class AttributeMap(Mapping, metaclass=AttributeMapMeta):
         return from_dict(cls, data)
 
 
-class BaseConfig(AttributeMap): ...
+class BaseConfig(AttributeMap):
+    pass
 
 
 class BaseModule:
