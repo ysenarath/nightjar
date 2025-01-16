@@ -35,6 +35,7 @@ class AttributeMapMeta(abc.ABCMeta):
         dispatch = kwargs.pop("dispatch", None)
         obj = super().__new__(mcls, name, bases, namespace)
         obj = dataclass(**kwargs)(obj)
+        # print all attributes
         if hasattr(obj, "_dispatch_registry"):
             obj._dispatch_registry.register(obj)
         elif dispatch is not None:
