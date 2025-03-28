@@ -140,6 +140,7 @@ ignore = [
     "N806",
     "S311",
     "PLR0914", # allow more than 15 local variables
+    "A005",
 ]
 unfixable = [
     # "F401",  # Don't touch unused imports
