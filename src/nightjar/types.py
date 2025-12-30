@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import sys
 from dataclasses import fields, is_dataclass
@@ -174,7 +176,7 @@ def from_dict(
         for subtype in type_args:
             try:
                 return from_dict(subtype, val)
-            except ValueError:
+            except (ValueError, TypeError):
                 continue
         msg = f"could not convert to any type in Union: {typ}"
         raise ValueError(msg)
