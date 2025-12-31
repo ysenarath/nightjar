@@ -19,7 +19,7 @@ from typing import (
     get_origin,
 )
 
-from nightjar.helpers import get_dataclass_type_hints
+from nightjar.utils import get_dataclass_type_hints
 
 try:
     from types import UnionType

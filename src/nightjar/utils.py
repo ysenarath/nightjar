@@ -1,6 +1,16 @@
+from __future__ import annotations
+
 import functools
 import sys
 import types
+import typing
+from dataclasses import fields
+from typing import Any
+
+__all__ = [
+    "get_annotations",
+    "get_dataclass_type_hints",
+]
 
 
 class ONLY_IF_ALL_STR_type:  # noqa: N801
@@ -117,3 +127,13 @@ def get_annotations(
         for key, value in ann.items()
     }
     return return_value
+
+
+def get_dataclass_type_hints(cls, globalns: Any = None, localns: Any = None):
+    types = {}
+    hints = typing.get_type_hints(cls, globalns=globalns, localns=localns)
+    for field in fields(cls):
+        if field.name not in hints:
+            continue
+        types[field.name] = hints[field.name]
+    return types

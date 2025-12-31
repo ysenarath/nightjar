@@ -5,8 +5,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, fields
 from typing import Any, Generic, Type, TypeVar
 
-from nightjar.helpers import get_dataclass_type_hints
-from nightjar.types import from_dict, to_dict
+from nightjar.serializers import from_dict, to_dict
+from nightjar.utils import get_dataclass_type_hints
 
 F = Callable[..., Any]
 T = TypeVar("T")
@@ -183,7 +183,7 @@ class DispatchRegistry(Generic[T]):
         return data
 
 
-def _make_registry() -> ObjectFactory:
+def main() -> ObjectFactory:
     registry = ObjectFactory()
 
     @registry.register
