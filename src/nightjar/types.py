@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import copy
 import sys
-from dataclasses import fields, is_dataclass
+from dataclasses import is_dataclass
 from datetime import date, datetime, time
 from pathlib import Path
 from typing import (
     Any,
-    ClassVar,
     ForwardRef,
-    Generic,
     List,
     Literal,
     Mapping,
@@ -19,28 +17,17 @@ from typing import (
     Union,
     get_args,
     get_origin,
-    get_type_hints,
-    runtime_checkable,
 )
+
+from nightjar.helpers import get_dataclass_type_hints
 
 try:
     from types import UnionType
 except ImportError:
     from typing import Union as UnionType
 
-from typing_extensions import Protocol
 
 T = TypeVar("T")
-
-
-def _get_type_hints(cls, globalns: Any = None, localns: Any = None):
-    types = {}
-    hints = get_type_hints(cls, globalns=globalns, localns=localns)
-    for field in fields(cls):
-        if field.name not in hints:
-            continue
-        types[field.name] = hints[field.name]
-    return types
 
 
 def evaluate_forwardref(typ: ForwardRef, globalns: Any, localns: Any) -> Any:
@@ -55,76 +42,12 @@ def evaluate_forwardref(typ: ForwardRef, globalns: Any, localns: Any) -> Any:
     )
 
 
-def _getattr(cls: type, attr: str):
-    if "." not in attr:
-        return getattr(cls, attr)
-    parts = attr.split(".")
-    for part in parts[:-1]:
-        cls = _get_type_hints(cls)[part]
-    part = parts[-1]
-    return getattr(cls, part, None)
-
-
-def _getitem(obj: dict, key: str) -> Any:
-    msg = f"key '{key}' not found in {obj}"
-    if "." in key:
-        parts = key.split(".")
-        for part in parts:
-            obj = obj[part]
-        return obj
-    try:
-        return obj.pop(key)
-    except KeyError:
-        raise KeyError(msg) from None
-
-
-class DispatchRegistry(Generic[T]):
-    def __init__(self, attrs: List[str]):
-        self.types = {}
-        if isinstance(attrs, str):
-            attrs = [attrs]
-        self.attrs = attrs
-
-    def register(self, cls):
-        self.types[tuple(_getattr(cls, a) for a in self.attrs)] = cls
-
-    def load(self, val: dict, globalns: Any = None, localns: Any = None) -> T:
-        val = dict(val).copy()
-        idv = tuple(_getitem(val, a) for a in self.attrs)
-        typ = self.types[idv]
-        field_types = _get_type_hints(typ)
-        kwargs = {
-            k: from_dict(
-                field_types.get(k, Any),
-                v,
-                globalns=globalns,
-                localns=localns,
-            )
-            for k, v in val.items()
-        }
-        return typ(**kwargs)
-
-    def dump(self, obj: Any) -> dict:
-        data = to_dict(obj, dispatch=False)
-        for a in self.attrs:
-            if "." in a:
-                # these do not belong in the data for this object
-                continue
-            data[a] = getattr(obj, a)
-        return data
-
-
-@runtime_checkable
-class Dispatchable(Protocol):
-    _dispatch_registry: ClassVar[DispatchRegistry]
-
-
 def _to_dict_inner(obj, dict_factory, dispatch: bool = True):
     if dispatch and hasattr(obj, "_dispatch_registry"):
         return obj.__class__._dispatch_registry.dump(obj)
     elif is_dataclass(obj):
         result = []
-        for fn in _get_type_hints(obj.__class__):
+        for fn in get_dataclass_type_hints(obj.__class__):
             value = _to_dict_inner(getattr(obj, fn), dict_factory)
             result.append((fn, value))
         return dict_factory(result)
@@ -208,7 +131,7 @@ def from_dict(
         if isinstance(val, typ):
             return val
         if isinstance(val, Mapping):
-            field_types = _get_type_hints(typ)
+            field_types = get_dataclass_type_hints(typ)
             kwargs = {
                 k: from_dict(
                     field_types.get(k, Any),
@@ -268,7 +191,7 @@ def from_dict(
             msg = f"could not convert to dict of type {typ}"
             raise ValueError(msg)
         ktype, vtype = Any, Any
-        if len(type_args) == 2:  # noqa: PLR2004
+        if len(type_args) == 2:
             ktype, vtype = type_args
         return {
             from_dict(ktype, k, globalns=globalns, localns=localns): from_dict(
