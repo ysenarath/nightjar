@@ -141,6 +141,7 @@ ignore = [
     "S311",
     "PLR0914", # allow more than 15 local variables
     "A005",
+    "PLR2004", # allow magic values in tests
 ]
 unfixable = [
     # "F401",  # Don't touch unused imports
