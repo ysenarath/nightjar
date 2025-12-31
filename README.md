@@ -17,32 +17,6 @@ Get started with Nightjar in seconds:
 pip install nightjar
 ```
 
-## Quick Start
-
-Here's a taste of how Nightjar can simplify your code:
-
-```python
-from nightjar import AutoModule, BaseConfig, BaseModule
-
-class VehicleConfig(BaseConfig, dispatch=["type"]):
-    type: str
-
-class Vehicle(BaseModule):
-    config: VehicleConfig
-
-class Car(Vehicle):
-    config: VehicleConfig
-
-class Van(Vehicle):
-    config: VanConfig
-
-# Create a vehicle based on configuration
-config = VehicleConfig.from_dict({"type": "car"})
-vehicle = AutoModule(config)
-
-print(type(vehicle))  # <class '__main__.Car'>
-```
-
 ## Documentation
 
 For more detailed information, check out our [full documentation](https://github.com/ysenarath/nightjar/wiki).
