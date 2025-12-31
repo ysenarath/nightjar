@@ -18,6 +18,7 @@ class AutoVehicle(AutoModule):
 
 class CarConfig(VehicleConfig):
     type: ClassVar[str] = "car"
+    num_doors: int = 4
 
 
 class Car(Vehicle):
@@ -34,7 +35,7 @@ class Van(Vehicle):
 
 # use from_dict method to create a configuration object from a dictionary this
 #   will automatically create the correct jar config.
-config = VehicleConfig.from_dict({"type": "car"})
+config = VehicleConfig.from_dict({"type": "car", "num_doors": 2})
 # Now you can create a car object using the configuration object with Auto*
 #   object
 car = AutoVehicle(config)
