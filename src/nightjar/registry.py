@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import functools
 import operator
 from collections import defaultdict
@@ -230,11 +231,11 @@ class DispatchRegistry(Generic[T]):
         candidates: set[Type] | None = None
         for a in self.attrs:
             attr_val = _getitem(val, a)
-            types_for_value = self.column_value_types[a].get(attr_val, set())
+            classes_for_value = self.column_value_types[a].get(attr_val, set())
             if candidates is None:
-                candidates = types_for_value
+                candidates = copy.copy(classes_for_value)  # create a copy
             else:
-                candidates = candidates.intersection(types_for_value)
+                candidates = candidates.intersection(classes_for_value)
             if not candidates:
                 break
         if candidates is None:
