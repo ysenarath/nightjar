@@ -142,6 +142,7 @@ ignore = [
     "A005",
     "PLR2004", # allow magic values in tests
     "E501",    # line length handled by black
+    "S101",    # allow use of assert statements in tests
 ]
 unfixable = [
     # "F401",  # Don't touch unused imports
