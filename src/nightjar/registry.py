@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import functools
 import operator
+from collections import defaultdict
 from collections.abc import Callable
-from dataclasses import dataclass, fields
+from dataclasses import MISSING
 from typing import Any, Generic, Type, TypeVar
 
 from nightjar.serializers import from_dict, to_dict
@@ -30,7 +32,7 @@ def _getitem(obj: dict, key: str) -> Any:
             obj = obj[part]
         return obj
     try:
-        return obj.pop(key)
+        return obj.get(key)
     except KeyError:
         raise KeyError(msg) from None
 
@@ -51,7 +53,7 @@ class Expression:
         return FunctionExpression(operator.or_, self, other)
 
     def __invert__(self) -> Expression:
-        return FunctionExpression(operator.inv, self)
+        return FunctionExpression(operator.not_, self)
 
     def eq(self, value) -> Expression:
         return FunctionExpression(operator.eq, self, value)
@@ -80,15 +82,54 @@ class Expression:
 
 class Field(Expression):
     name: str
+    default: Any
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, default: Any = None) -> None:
         self.name = name
+        self.default = default
 
     def exists(self) -> Expression:
         return FieldExistsExpression(self.name)
 
     def evaluate(self, val: dict) -> Any:
-        return val[self.name]
+        if self.default is MISSING:
+            return val[self.name]
+        return val.get(self.name, self.default)
+
+    @property
+    def str(self) -> StringField:
+        return StringField(self.name, self.default)
+
+
+class StringField(Field):
+    def lower(self) -> Expression:
+        return FunctionExpression(str.lower, self)
+
+    def upper(self) -> Expression:
+        return FunctionExpression(str.upper, self)
+
+    def strip(self) -> Expression:
+        return FunctionExpression(str.strip, self)
+
+    def startswith(self, prefix: str) -> Expression:
+        return FunctionExpression(str.startswith, self, prefix)
+
+    def endswith(self, suffix: str) -> Expression:
+        return FunctionExpression(str.endswith, self, suffix)
+
+    def eq(self, value: str, case: bool = True) -> Expression:
+        if case:
+            return super().eq(value)
+        return self.equals_ignore_case(value)
+
+    def equals_ignore_case(self, value: str) -> Expression:
+        return FunctionExpression(operator.eq, self.lower(), value.lower())
+
+    def evaluate(self, val: dict) -> Any:
+        result = super().evaluate(val)
+        if result is None:
+            return result
+        return str(result)
 
 
 class FieldExistsExpression(Expression):
@@ -109,59 +150,70 @@ class FunctionExpression(Expression):
         self.operator = operator
         self.operands = list(operands)
 
-    def evaluate(self, val: dict) -> bool:
+    def evaluate(self, val: dict) -> Any:
         operands = []
         for operand in self.operands:
             if isinstance(operand, Expression):
                 operand = operand.evaluate(val)
             operands.append(operand)
-        return self.operator(*operands)
+        try:
+            return self.operator(*operands)
+        except Exception:
+            return False
 
 
-class ObjectFactory:
-    def __init__(self):
-        self.classes: list[Type] = []
-        self.constraints: list[Expression] = []
+class LiteralExpression(Expression):
+    value: Any
 
-    def register(
-        self, cls: Type, constraint: Expression | None = None
-    ) -> None:
-        self.classes.append(cls)
-        if constraint is None:
-            constraint = getattr(cls, "__match__", None)
-            if constraint is None:
-                msg = f"No constraint provided for class {cls.__name__}"
-                raise ValueError(msg)
-        self.constraints.append(constraint)
-        return cls
+    def __init__(self, value: Any = True) -> None:
+        self.value = value
 
-    def load(self, val: dict) -> Any:
-        for cls, constraint in zip(self.classes, self.constraints):
-            if constraint.evaluate(val):
-                field_names = {f.name for f in fields(cls)}
-                filtered_val = {
-                    k: v for k, v in val.items() if k in field_names
-                }
-                return cls(**filtered_val)
-        msg = "No matching class found for the given data."
-        raise ValueError(msg)
+    def evaluate(self, val: dict) -> bool:
+        return bool(self.value)
+
+
+def create_expression(constraint: Expression | Any) -> Expression:
+    if constraint is MISSING:
+        return LiteralExpression(True)
+    elif isinstance(constraint, Expression):
+        return constraint
+    return LiteralExpression(constraint)
 
 
 class DispatchRegistry(Generic[T]):
-    def __init__(self, attrs: list[str] | str):
-        self.types = {}
-        if isinstance(attrs, str):
-            attrs = [attrs]
+    def __init__(self, attrs: list[str] | str | None = None):
         self.attrs = attrs
+        self.constraints: dict[Type, Expression] = {}
+        self.column_value_types: dict[str, dict[Any, set[Type]]] = defaultdict(
+            functools.partial(defaultdict, set)
+        )
 
-    def register(self, cls):
-        self.types[tuple(_getattr(cls, a) for a in self.attrs)] = cls
+    @property
+    def attrs(self) -> list[str]:
+        return self._attrs
+
+    @attrs.setter
+    def attrs(self, value: list[str] | str | None) -> None:
+        if value is None:
+            value = []
+        elif isinstance(value, str):
+            value = [value]
+        self._attrs = list(value)
+
+    def register(self, cls, constraint: Expression | Any = MISSING) -> None:
+        # get class attribute values for dispatch attributes
+        for a in self.attrs:
+            val = _getattr(cls, a)
+            self.column_value_types[a][val].add(cls)
+        # if there is any additional constraints, keep track of them
+        if hasattr(cls, "__match__") and constraint is MISSING:
+            constraint = getattr(cls, "__match__", None)
+        self.constraints[cls] = create_expression(constraint)
 
     def load(self, val: dict, globalns: Any = None, localns: Any = None) -> T:
         val = dict(val).copy()
-        idv = tuple(_getitem(val, a) for a in self.attrs)
-        typ = self.types[idv]
-        field_types = get_dataclass_type_hints(typ)
+        klass = self.resolve_type(val)
+        field_types = get_dataclass_type_hints(klass)
         kwargs = {
             k: from_dict(
                 field_types.get(k, Any),
@@ -170,8 +222,45 @@ class DispatchRegistry(Generic[T]):
                 localns=localns,
             )
             for k, v in val.items()
+            if k in field_types
         }
-        return typ(**kwargs)
+        return klass(**kwargs)
+
+    def resolve_type(self, val: dict) -> Any:
+        candidates: set[Type] | None = None
+        for a in self.attrs:
+            attr_val = _getitem(val, a)
+            types_for_value = self.column_value_types[a].get(attr_val, set())
+            if candidates is None:
+                candidates = types_for_value
+            else:
+                candidates = candidates.intersection(types_for_value)
+            if not candidates:
+                break
+        if candidates is None:
+            candidates = set()
+            for klass, constraint in self.constraints.items():
+                if not constraint.evaluate(val):
+                    continue
+                candidates.add(klass)
+        else:
+            for klass in list(candidates):
+                if klass not in self.constraints:
+                    continue  # no constraint -- keep it
+                constraint = self.constraints[klass]
+                if constraint.evaluate(val):
+                    continue  # matches constraint -- keep it
+                candidates.discard(klass)
+        n_candidates = len(candidates)
+        if n_candidates > 1:
+            matching_class_names = ", ".join([c.__name__ for c in candidates])
+            # one sentence error message without colons or line breaks
+            msg = f"multiple classes ({matching_class_names}) match the given data ({val})"
+            raise ValueError(msg)
+        if n_candidates == 0:
+            msg = "no class matching the given data"
+            raise ValueError(msg)
+        return candidates.pop()
 
     def dump(self, obj: Any) -> dict:
         data = to_dict(obj, dispatch=False)
@@ -181,59 +270,3 @@ class DispatchRegistry(Generic[T]):
                 continue
             data[a] = getattr(obj, a)
         return data
-
-
-def main() -> ObjectFactory:
-    registry = ObjectFactory()
-
-    @registry.register
-    @dataclass
-    class Car:
-        __match__ = (Field("wheels") == 4) & Field("engine").exists()
-
-        wheels: int
-        engine: str
-        doors: int = 4
-
-    @registry.register
-    @dataclass
-    class Motorcycle:
-        __match__ = (Field("wheels") == 2) & Field("engine").exists()
-
-        wheels: int
-        engine: str
-
-    @registry.register
-    @dataclass
-    class Bicycle:
-        __match__ = (Field("wheels") == 2) & Field("frame").exists()
-
-        wheels: int
-        frame: str
-
-    @registry.register
-    @dataclass
-    class Truck:
-        __match__ = (Field("wheels") == 6) & Field("engine").exists()
-
-        wheels: int
-        engine: str
-        cargo: float = 0.0
-
-    test_cases = [
-        {"wheels": 4, "engine": "V6", "doors": 2},
-        {"wheels": 2, "engine": "inline-2"},
-        {"wheels": 2, "frame": "carbon"},
-        {"wheels": 6, "engine": "diesel", "cargo": 5000},
-    ]
-
-    for data in test_cases:
-        result = registry.load(data)
-        print(result.__class__.__name__)
-        for f in fields(result.__class__):
-            print(f"+ {f.name} = {getattr(result, f.name)}")
-        print()
-
-
-if __name__ == "__main__":
-    main()

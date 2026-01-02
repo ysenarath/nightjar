@@ -5,7 +5,7 @@ import sys
 import types
 import typing
 from dataclasses import fields
-from typing import Any
+from typing import Annotated, Any, get_origin
 
 __all__ = [
     "get_annotations",
@@ -137,3 +137,7 @@ def get_dataclass_type_hints(cls, globalns: Any = None, localns: Any = None):
             continue
         types[field.name] = hints[field.name]
     return types
+
+
+def is_annotated(type_hint):
+    return get_origin(type_hint) is Annotated
