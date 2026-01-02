@@ -3,11 +3,11 @@ from __future__ import annotations
 import abc
 import contextlib
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, fields, is_dataclass
 from typing import Any, Generator, Generic, Type, TypeVar
 
-from typing_extensions import Self, dataclass_transform, deprecated
+from typing_extensions import Self, dataclass_transform
 
 from nightjar.registry import DispatchRegistry
 from nightjar.serializers import from_dict, to_dict
@@ -17,6 +17,7 @@ __all__ = ["AttributeMap", "BaseConfig", "BaseModule"]
 
 K = TypeVar("K")
 V = TypeVar("V")
+T = TypeVar("T")
 DType = TypeVar("DType", bound="dict[Type[BaseConfig], set[Type[BaseModule]]]")
 
 dispatch_map: DType = defaultdict(set)
@@ -104,23 +105,7 @@ class BaseModule:
             return
         dispatch_map[config_class].add(cls)
 
-    def __new__(cls, config: Any) -> Self:
-        if isinstance(config, BaseConfig):
-            config_class = type(config)
-        else:
-            if not isinstance(config, Mapping):
-                msg = f"Expected config to be a Mapping or BaseConfig, got {type(config).__name__}"
-                raise ValueError(msg)
-            config_class = get_annotations(cls).get("config", BaseConfig)
-            config = from_dict(config_class, config)
-        if BaseModule in cls.__bases__ and config_class in dispatch_map:
-            klass = get_model_class(config_class)
-            return klass(config)
-        # msg = f"No module found for config type {type(config).__name__}"
-        # raise ValueError(msg) from None
-        return super().__new__(cls)
-
-    def __init__(self, config: BaseConfig) -> None:
+    def __init__(self, config: BaseConfig | dict) -> None:
         super().__init__()
         self.config = config
         self.__post_init__()
@@ -128,9 +113,58 @@ class BaseModule:
     def __post_init__(self) -> None:
         pass
 
+    @property
+    def config(self) -> BaseConfig:
+        return self._config
 
-@deprecated("AutoModule is deprecated, use BaseModule instead.")
+    @config.setter
+    def config(self, value: BaseConfig | dict) -> None:
+        if not isinstance(value, BaseConfig):
+            cls = type(self)
+            config_class = get_annotations(cls).get("config", None)
+            if config_class is None:
+                msg = f"Could not determine config class for {cls.__name__}"
+                raise ValueError(msg)
+            value = from_dict(config_class, value)
+        self._config = value
+
+
 class AutoModule:
-    def __new__(cls, config: Any) -> BaseModule:
-        klass = get_model_class(config)
-        return klass(config)
+    def __new__(cls, config: BaseConfig) -> BaseModule:
+        if isinstance(config, BaseConfig):
+            config_class = type(config)
+        else:
+            if not isinstance(config, Mapping):
+                msg = f"Expected config to be a Mapping or BaseConfig, got {type(config).__name__}"
+                raise ValueError(msg)
+            base_config_class = get_annotations(cls).get("config", None)
+            if base_config_class is None:
+                msg = f"Could not determine config class for {cls.__name__}"
+                raise ValueError(msg)
+            config_class = from_dict(base_config_class, config)
+            config_class = type(config)
+        if config_class in dispatch_map:
+            klass = get_model_class(config_class)
+            self = super().__new__(klass)
+            self.__init__(config)
+            return self
+        msg = f"No module found for config type {type(config).__name__}"
+        raise ValueError(msg) from None
+
+    def __init__(self, config: BaseConfig) -> None:
+        raise NotImplementedError
+
+
+def register(*config: Type[BaseConfig]) -> Callable[[Type[T]], Type[T]]:
+    def decorator(cls: Type[T]) -> Type[T]:
+        for c in config:
+            dispatch_map[c].add(cls)
+        return cls
+
+    return decorator
+
+
+def dispatch(cls: Type[BaseConfig], config: dict) -> BaseModule:
+    config = from_dict(cls, config)
+    klass = get_model_class(config)
+    return klass(config)
