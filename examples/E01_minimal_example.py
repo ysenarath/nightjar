@@ -34,12 +34,7 @@ class Van(Vehicle):
 
 dict_cfg = {"type": "car", "num_doors": 2}
 
-car = Vehicle(dict_cfg)
-print(type(car))
-
-print("----")
-print(dict_cfg)
 vehicle_cfg = VehicleConfig.from_dict(dict_cfg)
-print(vehicle_cfg)
 car = AutoVehicle(vehicle_cfg)
-print(type(car))
+assert isinstance(car, Car)
+assert car.config.num_doors == 2

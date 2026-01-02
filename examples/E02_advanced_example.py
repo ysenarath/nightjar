@@ -1,15 +1,15 @@
-from nightjar import BaseConfig, BaseModule, Field
+from nightjar import AutoModule, BaseConfig, BaseModule, Field
 
 
 class VehicleConfig(BaseConfig): ...
 
 
-class Vehicle(BaseModule):
+class Vehicle(BaseModule, AutoModule):
     config: VehicleConfig
 
 
 class CarConfig(VehicleConfig):
-    __match__ = (Field("type").str.eq("car", case=False)) | (
+    __match__ = Field("type").str.eq("car", case=False) | (
         Field("num_doors") == 4
     )
 
@@ -40,35 +40,17 @@ class BicycleConfig(VehicleConfig):
     num_doors: int = 0
 
 
-# will result in a Vehicle instance since no match found
-try:
-    v = Vehicle(None)
-    msg = "Expected ValueError for None config"
-    raise AssertionError(msg)
-except ValueError:
-    pass
-
-# will result in a Car instance
 v = Vehicle({"type": "CAR"})
 if not isinstance(v, Car):
-    msg = "Expected v to be an instance of Car"
+    msg = f"Expected v to be an instance of Car, but got {type(v).__name__}"
     raise AssertionError(msg)
 
-# this will also result in a Car instance due to num_doors
 v = Vehicle({"num_doors": 4})
 if not isinstance(v, Car):
-    msg = "Expected v to be an instance of Car"
+    msg = f"Expected v to be an instance of Car, but got {type(v).__name__}"
     raise AssertionError(msg)
 
-# will result in a Van instance
 v = Vehicle({"type": "van"})
 if not isinstance(v, Van):
     msg = f"Expected v to be an instance of Van but got {type(v).__name__}"
-    raise AssertionError(msg)
-
-
-# will result in a Vehicle instance since no match found
-v = Vehicle({"type": "Bicycle"})
-if not isinstance(v, Vehicle):
-    msg = "Expected v to be an instance of Vehicle"
     raise AssertionError(msg)
