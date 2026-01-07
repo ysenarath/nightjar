@@ -141,7 +141,7 @@ class AutoModule:
             if base_config_class is None:
                 msg = f"Could not determine config class for {cls.__name__}"
                 raise ValueError(msg)
-            config_class = from_dict(base_config_class, config)
+            config = from_dict(base_config_class, config)
             config_class = type(config)
         if config_class in dispatch_map:
             klass = get_model_class(config_class)
@@ -151,8 +151,8 @@ class AutoModule:
         msg = f"No module found for config type {type(config).__name__}"
         raise ValueError(msg) from None
 
-    def __init__(self, config: BaseConfig) -> None:
-        raise NotImplementedError
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
 
 def register(*config: Type[BaseConfig]) -> Callable[[Type[T]], Type[T]]:
