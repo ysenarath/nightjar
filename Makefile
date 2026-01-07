@@ -10,5 +10,9 @@ build:
 publish:
 	twine upload dist/*
 
-sync:
-	bash scripts/sync.sh
+test:
+	hatch clean
+	uv build
+	uv pip install dist/nightjar-*.whl --force-reinstall
+	uv run python -m unittest discover -v -s ./tests -p "test_*.py"
+	uv pip install -e .
