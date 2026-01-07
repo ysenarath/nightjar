@@ -50,7 +50,7 @@ allow-direct-references = true
 [tool.hatch.version]
 path = "src/nightjar/__init__.py"
 
-[tool.hatch.build]
+[tool.hatch.build.targets.wheel]
 packages = ["src/nightjar"]
 
 [tool.hatch.build.targets.sdist]
