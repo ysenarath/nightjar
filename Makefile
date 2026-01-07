@@ -5,10 +5,10 @@ clean:
 	rm -rf dist build *.egg-info
 
 build:
-	hatch build
+	uv build
 
 publish:
-	twine upload dist/*
+	uv publish
 
 test:
 	hatch clean
