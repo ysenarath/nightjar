@@ -1,3 +1,4 @@
+import unittest
 from typing import ClassVar
 
 from nightjar import AutoModule, BaseConfig, BaseModule
@@ -32,9 +33,15 @@ class Van(Vehicle):
     config: VanConfig
 
 
-dict_cfg = {"type": "car", "num_doors": 2}
+class TestVehicle(unittest.TestCase):
+    def test_car_with_custom_doors(self):
+        config = {"type": "car", "num_doors": 2}
+        vehicle_cfg = VehicleConfig.from_dict(config)
+        car = AutoVehicle(vehicle_cfg)
+        self.assertIsInstance(car, Car)
+        assert isinstance(car, Car)  # for type checkers
+        self.assertEqual(car.config.num_doors, 2)
 
-vehicle_cfg = VehicleConfig.from_dict(dict_cfg)
-car = AutoVehicle(vehicle_cfg)
-assert isinstance(car, Car)
-assert car.config.num_doors == 2
+
+if __name__ == "__main__":
+    unittest.main()

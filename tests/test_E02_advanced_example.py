@@ -1,3 +1,5 @@
+import unittest
+
 from nightjar import AutoModule, BaseConfig, BaseModule, Field
 
 
@@ -40,17 +42,22 @@ class BicycleConfig(VehicleConfig):
     num_doors: int = 0
 
 
-v = Vehicle({"type": "CAR"})
-if not isinstance(v, Car):
-    msg = f"Expected v to be an instance of Car, but got {type(v).__name__}"
-    raise AssertionError(msg)
+class TestVehicle(unittest.TestCase):
+    def test_car_by_type_case_insensitive(self):
+        v = Vehicle({"type": "CAR"})
+        self.assertIsInstance(v, Car)
+        assert isinstance(v, Car)  # for type checkers
 
-v = Vehicle({"num_doors": 4})
-if not isinstance(v, Car):
-    msg = f"Expected v to be an instance of Car, but got {type(v).__name__}"
-    raise AssertionError(msg)
+    def test_car_by_num_doors(self):
+        v = Vehicle({"num_doors": 4})
+        self.assertIsInstance(v, Car)
+        assert isinstance(v, Car)  # for type checkers
 
-v = Vehicle({"type": "van"})
-if not isinstance(v, Van):
-    msg = f"Expected v to be an instance of Van but got {type(v).__name__}"
-    raise AssertionError(msg)
+    def test_van_by_type(self):
+        v = Vehicle({"type": "van"})
+        self.assertIsInstance(v, Van)
+        assert isinstance(v, Van)  # for type checkers
+
+
+if __name__ == "__main__":
+    unittest.main()
