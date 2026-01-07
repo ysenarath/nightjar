@@ -99,7 +99,7 @@ def from_dict(
         for subtype in type_args:
             try:
                 return from_dict(subtype, val)
-            except (ValueError, TypeError):
+            except Exception:  # noqa: S112
                 continue
         msg = f"could not convert to any type in Union: {typ}"
         raise ValueError(msg)
