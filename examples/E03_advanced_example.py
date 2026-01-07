@@ -23,7 +23,7 @@ class Car:
 
 class VanConfig(VehicleConfig):
     __match__ = (
-        Field("type").str.eq("van", case=False) & ~Field("new_attr").exists()
+        Field("type").str.eq("van", case=False) & ~Field("num_doors").exists()
     )
 
     type: str = "van"
@@ -31,11 +31,11 @@ class VanConfig(VehicleConfig):
 
 class AltVanConfig(VehicleConfig):
     __match__ = Field("type").str.eq("van", case=False) & (
-        Field("new_attr").exists()
+        Field("num_doors").exists()
     )
 
     type: str = "van"
-    new_attr: int = 10
+    num_doors: int = 4
 
 
 @register(AltVanConfig, VanConfig)
@@ -61,10 +61,10 @@ def test_van():
 
 
 def test_alt_van():
-    v = dispatch(VehicleConfig, {"type": "van", "new_attr": 5})
+    v = dispatch(VehicleConfig, {"type": "van", "num_doors": 5})
     assert isinstance(v, Van)
     assert isinstance(v.config, AltVanConfig)
-    assert v.config.new_attr == 5
+    assert v.config.num_doors == 5
 
 
 if __name__ == "__main__":
