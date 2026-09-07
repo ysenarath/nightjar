@@ -1,4 +1,5 @@
 """Typed configuration, predicate dispatch, and extensible object conversion."""
+
 from nightjar.base import (
     AutoModule,
     BaseConfig,
