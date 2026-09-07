@@ -7,8 +7,8 @@ from collections.abc import Callable
 from dataclasses import MISSING
 from typing import Any, Generic, Type, TypeVar
 
-from nightjar.serializers import from_dict, to_dict
-from nightjar.utils import get_dataclass_type_hints
+from nightjar.annotations import get_dataclass_type_hints
+from nightjar.conversion import from_dict, to_dict
 
 F = Callable[..., Any]
 T = TypeVar("T")

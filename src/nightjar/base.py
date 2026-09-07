@@ -9,9 +9,9 @@ from typing import Any, Generator, Generic, Type, TypeVar
 
 from typing_extensions import Self, dataclass_transform
 
+from nightjar.annotations import get_annotations
+from nightjar.conversion import from_dict, to_dict
 from nightjar.registry import DispatchRegistry
-from nightjar.serializers import from_dict, to_dict
-from nightjar.utils import get_annotations
 
 __all__ = ["AttributeMap", "BaseConfig", "BaseModule"]
 

@@ -24,7 +24,7 @@ classifiers = [ # ToDo: Modify according to your needs!
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 # direct dependencies of this package, installed when users `pip install *` later.
-dependencies = ["typing-extensions"]
+dependencies = ["typing-extensions>=4.13.0", "pydantic"]
 dynamic = ["version"]
 
 [project.scripts]
