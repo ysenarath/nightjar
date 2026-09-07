@@ -22,23 +22,44 @@ from nightjar import dispatch, register
 
 
 @dataclass
-class CarConfig:
-    kind: str = "car"
-    doors: int = 4
+class StorageConfig:
+    pass
 
 
-@register(kind="car")
 @dataclass
-class Car:
-    config: CarConfig
+class LocalConfig(StorageConfig):
+    kind: str = "local"
+    path: str = "."
 
 
-car = dispatch(CarConfig, {"kind": "car", "doors": "2"})
-assert car.config.doors == 2
+@dataclass
+class MemoryConfig(StorageConfig):
+    kind: str = "memory"
+    capacity: int = 100
+
+
+@register(kind="local")
+@dataclass
+class LocalStorage:
+    config: LocalConfig
+
+
+@register(kind="memory")
+@dataclass
+class MemoryStorage:
+    config: MemoryConfig
+
+
+storage = dispatch(StorageConfig, {"kind": "memory", "capacity": "20"})
+assert isinstance(storage, MemoryStorage)
+assert storage.config.capacity == 20
+
+local = dispatch(StorageConfig, {"kind": "local", "path": "./data"})
+assert isinstance(local, LocalStorage)
 ```
 
-`@register` infers the config type from the annotation. Use positional `Field`
-expressions for more complex matching rules.
+The caller supplies `StorageConfig`; `kind` selects the implementation.
+`@register` infers each concrete config type from its annotation.
 
 ## Compatibility
 

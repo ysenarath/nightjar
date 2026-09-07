@@ -4,46 +4,69 @@
 uv add nightjar
 ```
 
-## Register an implementation
+## Select a storage implementation
 
-Define a plain dataclass and register a constructor for it:
+Define a shared config family and register two implementations. The caller
+passes the family to `dispatch`; input data determines which implementation
+to construct:
 
 ```python
 from dataclasses import dataclass
-from nightjar import dispatch, register, to_dict
+from nightjar import dispatch, register
 
 
 @dataclass
-class CarConfig:
-    kind: str = "car"
-    doors: int = 4
+class StorageConfig:
+    pass
 
 
-@register(kind="car")
 @dataclass
-class Car:
-    config: CarConfig
-
-    def describe(self):
-        return f"Car with {self.config.doors} doors"
+class LocalConfig(StorageConfig):
+    kind: str = "local"
+    path: str = "."
 
 
-car = dispatch(CarConfig, {"kind": "car", "doors": "2"})
-assert isinstance(car, Car)
-assert car.describe() == "Car with 2 doors"
-assert to_dict(car.config) == {"kind": "car", "doors": 2}
+@dataclass
+class MemoryConfig(StorageConfig):
+    kind: str = "memory"
+    capacity: int = 100
 
-config = CarConfig(doors=3)
+
+@register(kind="local")
+@dataclass
+class LocalStorage:
+    config: LocalConfig
+
+
+@register(kind="memory")
+@dataclass
+class MemoryStorage:
+    config: MemoryConfig
+
+
+storage = dispatch(StorageConfig, {"kind": "memory", "capacity": "20"})
+assert isinstance(storage, MemoryStorage)
+assert storage.config.capacity == 20
+
+local = dispatch(StorageConfig, {"kind": "local", "path": "./data"})
+assert isinstance(local, LocalStorage)
+```
+
+Both calls use `StorageConfig`. The `kind` value selects a registration, then
+Nightjar converts the input into `LocalConfig` or `MemoryConfig` and passes it
+to the corresponding constructor. For example, `"20"` becomes an integer.
+
+`@register` infers the concrete config type from each implementation's `config`
+annotation. The shared family scopes selection to storage implementations.
+Matching keys such as `kind` are regular fields so they survive serialization.
+
+If you already have a concrete configuration, use `dispatch(config)`. This selects
+the unique constructor registered for its exact type and preserves the instance:
+
+```python
+config = MemoryConfig(capacity=30)
 assert dispatch(config).config is config
 ```
 
-`kind="car"` is a required input match, checked before conversion. Nightjar
-infers `CarConfig` from the `config` annotation, converts the data, and calls
-`Car(config)`. The decorator preserves `Car`; no Nightjar base class is needed.
-
-With an existing configuration instance, `dispatch(config)` selects the unique
-constructor registered for its exact type. It preserves the instance and does
-not recheck predicates or discriminator values.
-
-Continue with [dispatch](guides/dispatch.md) for configuration families,
-Pydantic models, and predicates.
+Continue with [dispatch](guides/dispatch.md) for predicates, Pydantic models,
+and saving configurations to rebuild implementations later.
