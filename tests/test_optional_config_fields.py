@@ -1,30 +1,27 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import dataclass
 from typing import ClassVar
 
-from nightjar import AutoModule, BaseConfig, BaseModule
+from nightjar import dispatch, from_dict, register
 
 
-class KnowledgeGraphConfig(BaseConfig, dispatch=["type"]):
+@dataclass
+class KnowledgeGraphConfig:
     type: ClassVar[str]
 
 
-class KnowledgeGraph(BaseModule):
-    config: KnowledgeGraphConfig
-
-
-class AutoKnowledgeGraph(AutoModule):
-    pass
-
-
+@dataclass
 class WikkipediaGraphConfig(KnowledgeGraphConfig):
     type: ClassVar[str] = "wikkipedia"
     # parameters specific to KnowledgeGraph
     predicates: list[str] | None
 
 
-class WikkipediaGraph(KnowledgeGraph):
+@register(WikkipediaGraphConfig, type="wikkipedia")
+@dataclass
+class WikkipediaGraph:
     config: WikkipediaGraphConfig
 
 
@@ -34,8 +31,8 @@ class TestKnowledgeGraph(unittest.TestCase):
             "type": "wikkipedia",
             "predicates": None,
         }
-        kg_cfg = KnowledgeGraphConfig.from_dict(config)
-        kg = AutoKnowledgeGraph(kg_cfg)
+        kg_cfg = from_dict(WikkipediaGraphConfig, config)
+        kg = dispatch(kg_cfg)
         self.assertIsInstance(kg, WikkipediaGraph)
         assert isinstance(kg, WikkipediaGraph)  # for type checkers
         self.assertIsNone(kg.config.predicates)
@@ -46,8 +43,8 @@ class TestKnowledgeGraph(unittest.TestCase):
             "type": "wikkipedia",
             "predicates": expected_predicates,
         }
-        kg_cfg = KnowledgeGraphConfig.from_dict(config)
-        kg = AutoKnowledgeGraph(kg_cfg)
+        kg_cfg = from_dict(WikkipediaGraphConfig, config)
+        kg = dispatch(kg_cfg)
         self.assertIsInstance(kg, WikkipediaGraph)
         assert isinstance(kg, WikkipediaGraph)  # for type checkers
         self.assertEqual(kg.config.predicates, expected_predicates)

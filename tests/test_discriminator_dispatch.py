@@ -1,43 +1,42 @@
 import unittest
+from dataclasses import dataclass
 from typing import ClassVar
 
-from nightjar import AutoModule, BaseConfig, BaseModule
+from nightjar import dispatch, register
 
 
-class VehicleConfig(BaseConfig, dispatch=["type"]):
+@dataclass
+class VehicleConfig:
     type: ClassVar[str]
 
 
-class Vehicle(BaseModule):
-    config: VehicleConfig
-
-
-class AutoVehicle(AutoModule):
-    config: VehicleConfig
-
-
+@dataclass
 class CarConfig(VehicleConfig):
     type: ClassVar[str] = "car"
     num_doors: int = 4
 
 
-class Car(Vehicle):
+@register(CarConfig, type="car")
+@dataclass
+class Car:
     config: CarConfig
 
 
+@dataclass
 class VanConfig(VehicleConfig):
     type: ClassVar[str] = "van"
 
 
-class Van(Vehicle):
+@register(VanConfig, type="van")
+@dataclass
+class Van:
     config: VanConfig
 
 
 class TestVehicle(unittest.TestCase):
     def test_car_with_custom_doors(self):
         config = {"type": "car", "num_doors": 2}
-        # vehicle_cfg = VehicleConfig.from_dict(config)
-        car = AutoVehicle(config)
+        car = dispatch(VehicleConfig, config)
         self.assertIsInstance(car, Car)
         assert isinstance(car, Car)  # for type checkers
         self.assertEqual(car.config.num_doors, 2)

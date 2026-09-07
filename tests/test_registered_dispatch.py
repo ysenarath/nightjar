@@ -3,12 +3,14 @@ from __future__ import annotations
 import unittest
 from dataclasses import dataclass
 
-from nightjar import BaseConfig, Field, dispatch, register
+from nightjar import Field, dispatch, register
 
 
-class VehicleConfig(BaseConfig): ...
+@dataclass
+class VehicleConfig: ...
 
 
+@dataclass
 class CarConfig(VehicleConfig):
     # fmt: off
     __match__ = \
@@ -26,6 +28,7 @@ class Car:
     config: CarConfig
 
 
+@dataclass
 class VanConfig(VehicleConfig):
     # fmt: off
     __match__ = \
@@ -36,6 +39,7 @@ class VanConfig(VehicleConfig):
     type: str = "van"
 
 
+@dataclass
 class AltVanConfig(VehicleConfig):
     # fmt: off
     __match__ = \

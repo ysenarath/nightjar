@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import Annotated, ClassVar, ForwardRef, Literal, Optional, Union
 
-from nightjar import AutoModule, BaseConfig, BaseModule, from_dict
+from nightjar import dispatch, from_dict, register
 from nightjar.annotations import get_annotations, get_dataclass_type_hints
 
 
@@ -23,24 +23,20 @@ class NestedPayload:
     tagged: Annotated[int | str, "int | str"]
 
 
-class UnionConfig(BaseConfig, dispatch=["kind"]):
+@dataclass
+class UnionConfig:
     kind: ClassVar[str]
 
 
-class UnionModule(BaseModule):
-    config: UnionConfig
-
-
-class AutoUnionModule(AutoModule):
-    pass
-
-
+@dataclass
 class ConcreteConfig(UnionConfig):
     kind: ClassVar[str] = "concrete"
     values: list[str] | None
 
 
-class ConcreteModule(UnionModule):
+@register(ConcreteConfig, kind="concrete")
+@dataclass
+class ConcreteModule:
     config: ConcreteConfig
 
 
@@ -61,8 +57,7 @@ class TestPostponedUnions(unittest.TestCase):
         self.assertEqual(hints["tagged"], Union[int, str])
 
     def test_dispatch_with_postponed_config(self):
-        config = UnionConfig.from_dict({"kind": "concrete", "values": None})
-        module = AutoUnionModule(config)
+        module = dispatch(UnionConfig, {"kind": "concrete", "values": None})
         self.assertIsInstance(module, ConcreteModule)
         self.assertIsNone(module.config.values)
 
