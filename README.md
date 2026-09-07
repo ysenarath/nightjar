@@ -38,6 +38,8 @@ configuration. Extend conversion with `converter_registry.register_type`.
   behavior follows the installed version; uv resolves a compatible release.
 - Import conversion helpers from `nightjar`; `nightjar.serializers` has been removed.
 
-[Documentation](https://github.com/ysenarath/nightjar/wiki) ·
+Preview the documentation with `uv run --group docs mkdocs serve`.
+
+[Documentation](docs/index.md) ·
 [Issues](https://github.com/ysenarath/nightjar/issues) ·
 [MIT License](LICENSE)

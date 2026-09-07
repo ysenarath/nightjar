@@ -1,0 +1,66 @@
+site_name: Nightjar
+site_url: https://ysenarath.github.io/nightjar/
+site_description: Typed configuration, object construction, and predicate dispatch for Python.
+repo_url: https://github.com/ysenarath/nightjar
+repo_name: ysenarath/nightjar
+
+theme:
+  name: material
+  font: false
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            show_root_heading: true
+            show_source: false
+            members_order: source
+            show_signature_annotations: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Guides:
+      - Dispatch: guides/dispatch.md
+      - Conversion: guides/conversion.md
+      - Custom converters: guides/custom-converters.md
+      - Compatibility: compatibility.md
+  - API reference:
+      - Configuration: reference/configuration.md
+      - Conversion: reference/conversion.md
+      - Predicates and registries: reference/registry.md
+      - Annotations: reference/annotations.md
+  - Building the docs: development.md
+
+watch:
+  - src/nightjar
