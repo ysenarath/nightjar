@@ -46,6 +46,7 @@ if _type_adapter is not None:
 
 
 def is_model_type(typ: Any) -> bool:
+    """Recognize Pydantic model classes, including v1 models in a v2 installation."""
     return (
         get_origin(typ) is None
         and isinstance(typ, type)
@@ -54,10 +55,12 @@ def is_model_type(typ: Any) -> bool:
 
 
 def is_model_instance(value: Any) -> bool:
+    """Return whether the value is an instance of a supported Pydantic model."""
     return isinstance(value, _model_types)
 
 
 def is_validated_dataclass(typ: Any) -> bool:
+    """Recognize dataclasses processed by the installed Pydantic APIs."""
     if hasattr(typ, "__pydantic_model__"):
         return True
     probe = getattr(pydantic.dataclasses, "is_pydantic_dataclass", None)
@@ -66,10 +69,18 @@ def is_validated_dataclass(typ: Any) -> bool:
 
 @lru_cache(maxsize=128)
 def _cached_adapter(typ):
+    """Build and cache a Pydantic v2 TypeAdapter for a hashable type."""
     return _type_adapter(typ)
 
 
 def validate(typ: Any, value: Any) -> Any:
+    """Validate a value with the installed Pydantic v1 or v2 API.
+
+    Existing model instances are returned unchanged. Legacy v1 dataclasses
+    use the v1 API even within a v2 installation. Coercion, validation errors,
+    and schema support follow the selected Pydantic API; Nightjar dispatch
+    and custom converter hooks are applied by from_dict, not this helper.
+    """
     if is_model_type(typ):
         if isinstance(value, typ):
             return value
@@ -90,6 +101,11 @@ def validate(typ: Any, value: Any) -> Any:
 
 
 def dump_model(value: Any) -> Any:
+    """Dump a Pydantic model using its native Python representation.
+
+    Uses model_dump(mode="python") for v2 models and dict() for v1 models.
+    The result is not necessarily JSON-compatible or itself a dictionary.
+    """
     if hasattr(value, "model_dump"):
         return value.model_dump(mode="python")
     return value.dict()
@@ -97,7 +113,12 @@ def dump_model(value: Any) -> Any:
 
 @dataclass(frozen=True)
 class Context:
-    """Per-call state threaded through a converter pipeline."""
+    """Immutable state shared by a conversion call.
+
+    Carries the converter registry, annotation namespaces, current generic
+    arguments, and whether dispatch is enabled for the current object.
+    Use encode and decode to recurse through registered converters.
+    """
 
     registry: ConverterRegistry
     globalns: Any = None
@@ -106,15 +127,18 @@ class Context:
     dispatch: bool = True
 
     def encode(self, obj: Any) -> Any:
+        """Encode a child with dispatch enabled and parent generic arguments cleared."""
         return self.registry.encode(
             obj, replace(self, dispatch=True, type_args=())
         )
 
     def decode(self, typ: Any, val: Any) -> Any:
         # Child types must not inherit their parent's generic arguments.
+        """Decode a child using the same namespaces but no parent generic arguments."""
         return self.registry.decode(typ, val, replace(self, type_args=()))
 
     def with_type_args(self, type_args: tuple) -> Context:
+        """Return a context copy carrying the supplied generic arguments."""
         return replace(self, type_args=type_args)
 
 
@@ -127,15 +151,19 @@ class Converter:
     """
 
     def matches_encode(self, obj: Any, ctx: Context) -> bool:  # noqa: PLR6301 - extensible instance interface
+        """Return whether this rule can encode the object; the default is False."""
         return False
 
     def matches_decode(self, typ: Any, ctx: Context) -> bool:  # noqa: PLR6301 - extensible instance interface
+        """Return whether this rule can decode the type; the default is False."""
         return False
 
     def encode(self, obj: Any, ctx: Context) -> Any:
+        """Encode a matched object; subclasses must implement supported directions."""
         raise NotImplementedError
 
     def decode(self, typ: Any, val: Any, ctx: Context) -> Any:
+        """Decode a matched type; subclasses must implement supported directions."""
         raise NotImplementedError
 
 
@@ -149,11 +177,17 @@ class ConverterRegistry:
     """
 
     def __init__(self) -> None:
+        """Create an empty registry without built-in conversion rules."""
         self._converters: list[Converter] = []
 
     def register(
         self, converter: Converter, *, prepend: bool = False
     ) -> Converter:
+        """Insert a converter and return it.
+
+        By default the converter is appended. Use prepend=True to give it
+        priority over existing rules. The first matching rule handles a value.
+        """
         if prepend:
             self._converters.insert(0, converter)
         else:
@@ -161,6 +195,7 @@ class ConverterRegistry:
         return converter
 
     def unregister(self, converter: Converter) -> None:
+        """Remove a converter, raising ValueError if it is not registered."""
         self._converters.remove(converter)
 
     def register_type(
@@ -183,12 +218,14 @@ class ConverterRegistry:
         return self.register(converter, prepend=prepend)
 
     def encode(self, obj: Any, ctx: Context) -> Any:
+        """Use the first matching encoder, or deep-copy an unmatched value."""
         for converter in self._converters:
             if converter.matches_encode(obj, ctx):
                 return converter.encode(obj, ctx)
         return copy.deepcopy(obj)
 
     def decode(self, typ: Any, val: Any, ctx: Context) -> Any:
+        """Use the first matching decoder, raising ValueError if no rule matches."""
         for converter in self._converters:
             if converter.matches_decode(typ, ctx):
                 return converter.decode(typ, val, ctx)
@@ -209,14 +246,17 @@ class SimpleTypeConverter(Converter):
         encode_fn: Callable[[Any], Any] | None = None,
         decode_fn: Callable[[type, Any], Any] | None = None,
     ) -> None:
+        """Store a leaf type and optional encoding and decoding callbacks."""
         self.type = typ
         self._encode_fn = encode_fn
         self._decode_fn = decode_fn
 
     def matches_encode(self, obj: Any, ctx: Context) -> bool:
+        """Match instances of the configured type when an encoder is available."""
         return self._encode_fn is not None and isinstance(obj, self.type)
 
     def matches_decode(self, typ: Any, ctx: Context) -> bool:
+        """Match subclasses of the configured type when a decoder is available."""
         return (
             self._decode_fn is not None
             and isinstance(typ, type)
@@ -224,9 +264,11 @@ class SimpleTypeConverter(Converter):
         )
 
     def encode(self, obj: Any, ctx: Context) -> Any:
+        """Call the registered encoder with the object."""
         return self._encode_fn(obj)
 
     def decode(self, typ: Any, val: Any, ctx: Context) -> Any:
+        """Call the registered decoder with the target type and input value."""
         return self._decode_fn(typ, val)
 
 
@@ -235,6 +277,7 @@ class _DefaultConverter(Converter):
 
     @staticmethod
     def matches_encode(obj: Any, ctx: Context) -> bool:
+        """Recognize structured values handled by the built-in encoder."""
         return (
             (ctx.dispatch and hasattr(obj, "_dispatch_registry"))
             or is_model_instance(obj)
@@ -244,6 +287,7 @@ class _DefaultConverter(Converter):
 
     @staticmethod
     def matches_decode(typ: Any, ctx: Context) -> bool:
+        """Recognize annotations and types handled by the built-in decoder."""
         return (
             get_origin(typ) is not None
             or isinstance(typ, (type, str, ForwardRef))
@@ -258,6 +302,7 @@ class _DefaultConverter(Converter):
 
     @staticmethod
     def encode(obj: Any, ctx: Context) -> Any:
+        """Encode structured values while preserving recursive dispatch hooks."""
         if ctx.dispatch and hasattr(obj, "_dispatch_registry"):
             return obj.__class__._dispatch_registry.dump(obj)
         if is_model_instance(obj):
@@ -282,6 +327,7 @@ class _DefaultConverter(Converter):
 
     @staticmethod
     def decode(typ: Any, val: Any, ctx: Context) -> Any:
+        """Resolve annotations and dispatch before delegating leaf validation."""
         origin = get_origin(typ)
         if origin is not None:
             return ctx.registry.decode(
@@ -336,6 +382,11 @@ class _DefaultConverter(Converter):
 
 
 def _decode_dataclass(typ, val, ctx):
+    """Build a dataclass from input data or preserve an existing instance.
+
+    Pydantic dataclasses run their native validation. Plain dataclasses convert
+    known fields recursively and ignore unknown keys.
+    """
     if isinstance(val, typ):
         return val
     if is_validated_dataclass(typ):
@@ -352,6 +403,11 @@ def _decode_dataclass(typ, val, ctx):
 
 
 def _decode_tuple(typ, val, ctx):
+    """Convert tuple elements using positional or variadic type arguments.
+
+    Extra elements in fixed-length annotations fall back to Any; this helper
+    does not enforce the annotated tuple length.
+    """
     args = ctx.type_args
     try:
         if not args:
@@ -376,6 +432,28 @@ registry.register(_DefaultConverter())
 
 
 def to_dict(obj: Any, dispatch: bool = True) -> Any:
+    """Convert an object to a nested Python representation.
+
+    Parameters
+    ----------
+    obj : object
+        Value to encode through the shared converter registry.
+    dispatch : bool, optional
+        Whether to use the root object's dispatch registry. Defaults to True.
+        Nested objects still use dispatch when this is False.
+
+    Returns
+    -------
+    object
+        Encoded value. Dataclasses and named tuples become dictionaries;
+        ordinary tuples remain tuples. Unmatched values are deep-copied.
+
+    Notes
+    -----
+    The result is not guaranteed to be a dictionary or JSON-compatible.
+    Custom encoders and native Pydantic model serialization may return other
+    Python values.
+    """
     ctx = Context(registry=registry, dispatch=dispatch)
     return registry.encode(obj, ctx)
 
@@ -383,6 +461,31 @@ def to_dict(obj: Any, dispatch: bool = True) -> Any:
 def from_dict(
     typ: Type[T], val: Any, globalns: Any = None, localns: Any = None
 ) -> T:
+    """Convert a Python value into the requested type.
+
+    Parameters
+    ----------
+    typ : type or typing annotation
+        Target type, generic alias, string annotation, or forward reference.
+    val : object
+        Input value, commonly a dictionary or nested container.
+    globalns, localns : dict, optional
+        Namespaces forwarded to string and forward-reference conversion.
+        Plain dataclass field hints use their defining-module namespaces.
+
+    Returns
+    -------
+    object
+        The converted value or the selected registered configuration subtype.
+
+    Notes
+    -----
+    Custom converters take priority according to registry order. Nightjar
+    handles dispatch and recursive containers; Pydantic validates remaining
+    values. Ordinary unions try alternatives in order and return the first
+    successful conversion. Pydantic coercion depends on its installed version.
+    Conversion errors propagate unless a later union alternative succeeds.
+    """
     if globalns is None:
         globalns = globals()
     if localns is None:

@@ -1,3 +1,4 @@
+"""Typed configuration, predicate dispatch, and extensible object conversion."""
 from nightjar.base import (
     AutoModule,
     BaseConfig,
@@ -15,7 +16,7 @@ from nightjar.conversion import (
 from nightjar.conversion import registry as converter_registry
 from nightjar.registry import Field
 
-__version__ = "0.0.7"
+__version__ = "0.0.8"
 
 __all__ = [
     "AutoModule",

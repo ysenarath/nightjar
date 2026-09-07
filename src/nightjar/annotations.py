@@ -24,7 +24,9 @@ __all__ = [
 
 
 class ONLY_IF_ALL_STR_type:  # noqa: N801
+    """Sentinel type selecting evaluation only when every annotation is a string."""
     def __repr__(self):
+        """Return the display name of the string-evaluation sentinel."""
         return "<ONLY_IF_ALL_STR>"
 
 
@@ -35,7 +37,32 @@ NoneType = type(None)
 def get_annotations(
     obj, globals=None, locals=None, *, eval_str=ONLY_IF_ALL_STR
 ):
-    """Retrieve annotations, retaining Nightjar's string-evaluation policy."""
+    """Return annotations with optional evaluation of string values.
+
+    Parameters
+    ----------
+    obj : object
+        A class, module, or callable accepted by typing_extensions.
+        Inherited class annotations are excluded.
+    globals, locals : dict, optional
+        Namespaces used to evaluate strings. Globals default to the module,
+        the class's defining module, or the unwrapped callable's globals.
+        When locals are omitted, evaluation uses the global namespace.
+    eval_str : bool or ONLY_IF_ALL_STR, optional
+        True evaluates string values; False preserves them. The default
+        evaluates strings only when all annotation values are strings.
+
+    Returns
+    -------
+    dict
+        Annotation names mapped to their original or evaluated values.
+
+    Notes
+    -----
+    Python 3.9 union expressions are supported during evaluation. Non-string
+    values are preserved, and a quoted string is evaluated only once.
+    Retrieval and evaluation errors propagate to the caller.
+    """
     ann = _get_annotations(obj, eval_str=False)
     # Preserve the existing callable dictionary identity when not evaluating.
     if callable(obj) and not isinstance(obj, type):
@@ -71,6 +98,13 @@ def get_annotations(
 
 
 def get_dataclass_type_hints(cls, globalns: Any = None, localns: Any = None):
+    """Resolve annotations for actual dataclass fields, including inherited fields.
+
+    ClassVar and InitVar annotations are excluded from the result. Explicit
+    namespaces are used for resolution; otherwise defining-module namespaces
+    are used. Python 3.9 resolution supports postponed union expressions.
+    Annotated metadata is stripped, as with typing.get_type_hints.
+    """
     if sys.version_info < (3, 10):
         hints = get_class_type_hints_39(cls, globalns, localns)
     else:
@@ -83,6 +117,11 @@ def get_dataclass_type_hints(cls, globalns: Any = None, localns: Any = None):
 
 
 def evaluate_forwardref(typ: ForwardRef, globalns: Any, localns: Any) -> Any:
+    """Resolve a ForwardRef using the supplied global and local namespaces.
+
+    Uses Nightjar's union backport on Python 3.9 and typing_extensions on
+    newer Python versions. Unresolved names raise NameError.
+    """
     if sys.version_info < (3, 10):
         return resolve_type_39(typ, globalns, localns)
     return evaluate_forward_ref(
@@ -91,10 +130,12 @@ def evaluate_forwardref(typ: ForwardRef, globalns: Any, localns: Any) -> Any:
 
 
 def is_annotated(type_hint):
+    """Return whether the type hint is an Annotated alias."""
     return get_origin(type_hint) is Annotated
 
 
 def _union(left, right):
+    """Apply the native OR operator, falling back to typing.Union for types."""
     try:
         return operator.or_(left, right)
     except TypeError as exc:
@@ -104,10 +145,13 @@ def _union(left, right):
 
 
 class _UnionTransformer(ast.NodeTransformer):
+    """Rewrite OR expressions to calls to a named compatibility helper."""
     def __init__(self, helper_name):
+        """Store the name under which the evaluation helper will be available."""
         self.helper_name = helper_name
 
     def visit_BinOp(self, node):
+        """Rewrite bitwise OR nodes while preserving other binary operations."""
         node = self.generic_visit(node)
         if isinstance(node.op, ast.BitOr):
             return ast.copy_location(
@@ -122,6 +166,12 @@ class _UnionTransformer(ast.NodeTransformer):
 
 
 def evaluate_annotation(expression, globalns, localns):
+    """Evaluate one annotation expression in the supplied namespaces.
+
+    Python 3.9 OR expressions use a compatibility helper in copied namespaces.
+    Other expressions use eval directly. String results remain strings;
+    recursive forward-reference resolution is handled separately.
+    """
     if sys.version_info >= (3, 10):
         return eval(expression, globalns, localns)  # noqa: S307
 
@@ -147,6 +197,12 @@ def evaluate_annotation(expression, globalns, localns):
 def resolve_type_39(
     value, globalns=None, localns=None, recursive_guard=frozenset()
 ):
+    """Resolve forward references and generic arguments on Python 3.9.
+
+    Literal values and Annotated metadata are preserved. A recursion guard
+    leaves references unresolved when revisiting the same expression, so
+    recursive aliases terminate. This helper uses Python 3.9 typing internals.
+    """
     if globalns is None:
         globalns = localns if localns is not None else {}
     if localns is None:
@@ -186,6 +242,12 @@ def resolve_type_39(
 
 
 def get_class_type_hints_39(cls, globalns=None, localns=None):
+    """Collect resolved class annotations across the MRO on Python 3.9.
+
+    Subclass annotations override inherited names. Each base uses its defining
+    module unless globalns is supplied. Annotated metadata is removed, and
+    classes marked with no_type_check return an empty dictionary.
+    """
     if getattr(cls, "__no_type_check__", None):
         return {}
     hints = {}
