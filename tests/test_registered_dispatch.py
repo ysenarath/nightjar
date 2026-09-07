@@ -12,17 +12,14 @@ class VehicleConfig: ...
 
 @dataclass
 class CarConfig(VehicleConfig):
-    # fmt: off
-    __match__ = \
-        Field("type").str.eq("car", case=False) \
-        | (Field("num_doors") == 4)
-    # fmt: on
-
     type: str = "car"
     num_doors: int = 4
 
 
-@register(CarConfig)
+@register(
+    CarConfig,
+    Field("type").str.eq("car", case=False) | (Field("num_doors") == 4),
+)
 @dataclass
 class Car:
     config: CarConfig
@@ -30,28 +27,23 @@ class Car:
 
 @dataclass
 class VanConfig(VehicleConfig):
-    # fmt: off
-    __match__ = \
-        Field("type").str.eq("van", case=False) \
-        & ~Field("num_doors").exists()
-    # fmt: on
-
     type: str = "van"
 
 
 @dataclass
 class AltVanConfig(VehicleConfig):
-    # fmt: off
-    __match__ = \
-        Field("type").str.eq("van", case=False) \
-        & Field("num_doors").exists()
-    # fmt: on
-
     type: str = "van"
     num_doors: int = 4
 
 
-@register(AltVanConfig, VanConfig)
+@register(
+    AltVanConfig,
+    Field("type").str.eq("van", case=False) & Field("num_doors").exists(),
+)
+@register(
+    VanConfig,
+    Field("type").str.eq("van", case=False) & ~Field("num_doors").exists(),
+)
 @dataclass
 class Van:
     config: VanConfig | AltVanConfig

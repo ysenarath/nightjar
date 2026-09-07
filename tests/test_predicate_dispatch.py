@@ -11,16 +11,14 @@ class VehicleConfig: ...
 
 @dataclass
 class CarConfig(VehicleConfig):
-    __match__ = or_(
-        Field("type").str.eq("car", case=False),
-        Field("num_doors") == 4,
-    )
-
     type: str = "car"
     num_doors: int = 4
 
 
-@register(CarConfig, when=CarConfig.__match__)
+@register(
+    CarConfig,
+    or_(Field("type").str.eq("car", case=False), Field("num_doors") == 4),
+)
 @dataclass
 class Car:
     config: CarConfig
@@ -28,12 +26,10 @@ class Car:
 
 @dataclass
 class VanConfig(VehicleConfig):
-    __match__ = Field("type").str.eq("van", case=False)
-
     type: str = "van"
 
 
-@register(VanConfig, when=VanConfig.__match__)
+@register(VanConfig, Field("type").str.eq("van", case=False))
 @dataclass
 class Van:
     config: VanConfig
@@ -41,18 +37,14 @@ class Van:
 
 @dataclass
 class BicycleConfig(VehicleConfig):
-    # fmt: off
-    __match__ = (
-        (Field("type").str.lower() == "bicycle")
-        | (Field("num_doors") == 0)
-    )
-    # fmt: on
-
     type: str = "bicycle"
     num_doors: int = 0
 
 
-@register(BicycleConfig, when=BicycleConfig.__match__)
+@register(
+    BicycleConfig,
+    (Field("type").str.lower() == "bicycle") | (Field("num_doors") == 0),
+)
 @dataclass
 class Bicycle:
     config: BicycleConfig

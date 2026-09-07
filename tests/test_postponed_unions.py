@@ -34,7 +34,7 @@ class ConcreteConfig(UnionConfig):
     values: list[str] | None
 
 
-@register(ConcreteConfig, kind="concrete")
+@register(kind="concrete")
 @dataclass
 class ConcreteModule:
     config: ConcreteConfig
