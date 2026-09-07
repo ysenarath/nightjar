@@ -5,30 +5,39 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/nightjar)
 ![GitHub](https://img.shields.io/github/license/ysenarath/nightjar)
 
-## About Nightjar
+Typed configuration, object construction, and predicate-based dispatch for Python.
+Supports dataclasses, Pydantic models, and custom converters.
 
-Nightjar is a powerful Python package that brings the flexibility of configuration-based object creation to your projects. Inspired by the `huggingface/transformers` package, Nightjar allows you to effortlessly create and manage different types of objects based on simple configuration files.
-
-## Installation
-
-Get started with Nightjar in seconds:
+## Install
 
 ```bash
-pip install nightjar
+uv add nightjar
 ```
 
-## Documentation
+## Usage
 
-For more detailed information, check out our [full documentation](https://github.com/ysenarath/nightjar/wiki).
+```python
+from pydantic import BaseModel
+from nightjar import from_dict, to_dict
 
-## Contributing
+class Item(BaseModel):
+    count: int
+    enabled: bool = True
 
-We welcome contributions! Check out our [Contribution Guide](CONTRIBUTING.md) to get started.
+item = from_dict(Item, {"count": "4", "enabled": "false"})
+assert to_dict(item) == {"count": 4, "enabled": False}
+```
 
-## Support
+Use `AutoModule` or `dispatch` to construct registered implementations from
+configuration. Extend conversion with `converter_registry.register_type`.
 
-Need help? Have questions? Join our [Discord community](https://discord.gg/nightjar) or open an [issue](https://github.com/ysenarath/nightjar/issues).
+## Compatibility
 
-## License
+- Python 3.9+: use `from __future__ import annotations` for `A | B` annotations on 3.9.
+- Pydantic v1.10 and v2 are supported without an exact version pin. Conversion
+  behavior follows the installed version; uv resolves a compatible release.
+- Import conversion helpers from `nightjar`; `nightjar.serializers` has been removed.
 
-Nightjar is released under the [MIT License](LICENSE).
+[Documentation](https://github.com/ysenarath/nightjar/wiki) ·
+[Issues](https://github.com/ysenarath/nightjar/issues) ·
+[MIT License](LICENSE)
