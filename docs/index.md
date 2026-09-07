@@ -1,7 +1,9 @@
 # Nightjar
 
-Turn typed configuration into Python objects. Nightjar combines dataclass-based
-configuration, predicate dispatch, and extensible conversion backed by Pydantic.
+A config dispatch library.
+
+Register constructors for plain dataclasses or Pydantic models, then select an
+implementation from configuration. Start with the [quickstart](getting-started.md).
 
 ```bash
 uv add nightjar

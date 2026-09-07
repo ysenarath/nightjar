@@ -1,6 +1,6 @@
 site_name: Nightjar
 site_url: https://ysenarath.github.io/nightjar/
-site_description: Typed configuration, object construction, and predicate dispatch for Python.
+site_description: A config dispatch library.
 repo_url: https://github.com/ysenarath/nightjar
 repo_name: ysenarath/nightjar
 
@@ -56,9 +56,9 @@ nav:
       - Custom converters: guides/custom-converters.md
       - Compatibility: compatibility.md
   - API reference:
-      - Configuration: reference/configuration.md
+      - Registration and dispatch: reference/configuration.md
       - Conversion: reference/conversion.md
-      - Predicates and registries: reference/registry.md
+      - Predicates: reference/registry.md
       - Annotations: reference/annotations.md
   - Building the docs: development.md
 

@@ -26,8 +26,8 @@ assert from_dict(list[int], ["1", "2"]) == [1, 2]
 
 Ordinary dataclasses convert declared fields recursively and ignore unknown
 input keys. Missing required fields fail during construction. Lists, mappings,
-and tuples recurse through Nightjar's converters, retaining nested dispatch and
-custom conversion rules.
+and tuples recurse through Nightjar's custom conversion rules. Conversion does
+not select registered implementations; use `dispatch` for that.
 
 ## Pydantic models
 
@@ -46,6 +46,7 @@ succeeds. See [compatibility](../compatibility.md).
 UUIDs can remain Python objects. Unmatched values are deep-copied. Use a custom
 converter when an application requires a particular representation.
 
-For configurations, `to_dict(config)` includes dispatch attributes.
-`to_dict(config, dispatch=False)` suppresses dispatch for the root object only;
-nested objects still use dispatch.
+`to_dict` includes dataclass fields or the model's serialized fields. It does
+not inject discriminator values from registrations or include dataclass
+`ClassVar` attributes. Declare discriminator fields explicitly when the output
+must contain them.

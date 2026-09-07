@@ -1,55 +1,49 @@
 # Getting started
 
-Install Nightjar into your project:
-
 ```bash
 uv add nightjar
 ```
 
-## Define configuration and an implementation
+## Register an implementation
 
-A direct subclass of `BaseConfig` defines a configuration family. Subclasses of
-that family are registered automatically and become dataclasses without needing
-the `@dataclass` decorator.
+Define a plain dataclass and register a constructor for it:
 
 ```python
-from __future__ import annotations
-
-from typing import ClassVar
-from nightjar import AutoModule, BaseConfig, BaseModule, dispatch, to_dict
+from dataclasses import dataclass
+from nightjar import dispatch, register, to_dict
 
 
-class VehicleConfig(BaseConfig, dispatch=["kind"]):
-    kind: ClassVar[str]
-
-
-class CarConfig(VehicleConfig):
-    kind: ClassVar[str] = "car"
+@dataclass
+class CarConfig:
+    kind: str = "car"
     doors: int = 4
 
 
-class Car(BaseModule):
+@register(CarConfig, kind="car")
+@dataclass
+class Car:
     config: CarConfig
 
     def describe(self):
         return f"Car with {self.config.doors} doors"
 
 
-car = dispatch(VehicleConfig, {"kind": "car", "doors": "2"})
+car = dispatch(CarConfig, {"kind": "car", "doors": "2"})
 assert isinstance(car, Car)
 assert car.describe() == "Car with 2 doors"
 assert to_dict(car.config) == {"kind": "car", "doors": 2}
 
-config = VehicleConfig.from_dict({"kind": "car"})
-assert isinstance(AutoModule(config), Car)
+config = CarConfig(doors=3)
+assert dispatch(config).config is config
 ```
 
-The `kind` class variable selects the configuration subtype. The `config`
-annotation on `Car` registers the implementation. Loading converts field values
-before passing the configuration to the implementation constructor.
+`kind="car"` is a required input match, checked before conversion. Nightjar
+converts the data to `CarConfig` and calls `Car(config)`. The decorator preserves
+`Car`; no Nightjar base class is needed.
 
-Use `dispatch` when starting from a dictionary, or `AutoModule` when you already
-have a configuration instance. Both require a unique registered implementation.
+With an existing configuration instance, `dispatch(config)` selects the unique
+constructor registered for its exact type. It preserves the instance and does
+not recheck predicates or discriminator values.
 
-Continue with [dispatch](guides/dispatch.md) for predicates and registration of
-classes that do not inherit from `BaseModule`.
+Continue with [dispatch](guides/dispatch.md) for configuration families,
+Pydantic models, and predicates.

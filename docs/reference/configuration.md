@@ -1,11 +1,8 @@
-# Configuration
+# Registration and dispatch
 
-::: nightjar.base.BaseConfig
+Import these functions from `nightjar`. Configuration types can be plain
+dataclasses or Pydantic models; implementations need no Nightjar base class.
 
-::: nightjar.base.BaseModule
+::: nightjar.dispatching.register
 
-::: nightjar.base.AutoModule
-
-::: nightjar.base.dispatch
-
-::: nightjar.base.register
+::: nightjar.dispatching.dispatch

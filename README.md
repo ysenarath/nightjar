@@ -5,7 +5,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/nightjar)
 ![GitHub](https://img.shields.io/github/license/ysenarath/nightjar)
 
-Typed configuration, object construction, and predicate-based dispatch for Python.
+A config dispatch library.
 Supports dataclasses, Pydantic models, and custom converters.
 
 ## Install
@@ -28,8 +28,8 @@ item = from_dict(Item, {"count": "4", "enabled": "false"})
 assert to_dict(item) == {"count": 4, "enabled": False}
 ```
 
-Use `AutoModule` or `dispatch` to construct registered implementations from
-configuration. Extend conversion with `converter_registry.register_type`.
+Use `@register(ConfigType, kind="value")` and `dispatch(ConfigType, data)` to
+construct implementations from configuration. No Nightjar base classes required.
 
 ## Compatibility
 

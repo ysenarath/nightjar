@@ -42,3 +42,23 @@ Import `from_dict`, `to_dict`, and `converter_registry` from `nightjar`.
 The former `nightjar.serializers` and `nightjar.utils` modules have been removed.
 Annotation helpers live in `nightjar.annotations`; most applications can use the
 top-level conversion API without calling them directly.
+
+## Migrating from the inheritance API
+
+`BaseConfig`, `BaseModule`, `AutoModule`, and `DispatchRegistry` have been removed.
+
+- Replace configuration subclasses of `BaseConfig` with plain `@dataclass`
+  classes or Pydantic models. Decorate each plain dataclass subclass explicitly.
+- Replace implementation subclasses of `BaseModule` with plain classes that
+  accept a configuration, and apply `@register(ConfigType, kind="value")`.
+- Replace `AutoModule(config)` with `dispatch(config)`.
+- Replace family-level `Config.from_dict(data)` followed by construction with
+  `dispatch(Config, data)`. For conversion alone, use `from_dict(ConcreteConfig, data)`.
+- Replace class-level `dispatch=["kind"]` with keyword matches on `@register`.
+  Move predicates to `when=...`, or retain a configuration's `__match__` expression.
+- Remove the `dispatch` argument from `to_dict`. Registration discriminators are
+  no longer injected into output; use declared fields when they should persist.
+
+Plain classes do not inherit the old mapping interface or automatic initialization
+hooks. Use attributes to read configuration and initialize implementations in
+`__init__`, or use a dataclass with its standard `__post_init__` hook.
