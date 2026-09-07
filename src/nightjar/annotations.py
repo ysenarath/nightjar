@@ -25,6 +25,7 @@ __all__ = [
 
 class ONLY_IF_ALL_STR_type:  # noqa: N801
     """Sentinel type selecting evaluation only when every annotation is a string."""
+
     def __repr__(self):
         """Return the display name of the string-evaluation sentinel."""
         return "<ONLY_IF_ALL_STR>"
@@ -146,6 +147,7 @@ def _union(left, right):
 
 class _UnionTransformer(ast.NodeTransformer):
     """Rewrite OR expressions to calls to a named compatibility helper."""
+
     def __init__(self, helper_name):
         """Store the name under which the evaluation helper will be available."""
         self.helper_name = helper_name

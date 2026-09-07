@@ -1,4 +1,5 @@
 """Composable field predicates and registries for configuration dispatch."""
+
 from __future__ import annotations
 
 import functools
@@ -46,6 +47,7 @@ class Expression:
     Comparisons, & and | create expression objects; ~ negates an expression.
     Operands are evaluated eagerly when the resulting expression is evaluated.
     """
+
     __hash__ = None
 
     def evaluate(self, val: dict) -> bool:
@@ -108,6 +110,7 @@ class Field(Expression):
     Use dataclasses.MISSING as the default to require the key. Field names
     are literal keys; Field itself does not traverse dotted paths.
     """
+
     name: str
     default: Any
 
@@ -134,6 +137,7 @@ class Field(Expression):
 
 class StringField(Field):
     """Convert non-None field values to strings before applying string operations."""
+
     def lower(self) -> Expression:
         """Build an expression applying str.lower to the field value."""
         return FunctionExpression(str.lower, self)
@@ -174,6 +178,7 @@ class StringField(Field):
 
 class FieldExistsExpression(Expression):
     """Expression testing whether an input key is present."""
+
     field: str
 
     def __init__(self, field: str) -> None:
@@ -191,6 +196,7 @@ class FunctionExpression(Expression):
     Operator exceptions produce False. Exceptions while evaluating operands
     propagate to the caller.
     """
+
     operator: F
     operands: list[Expression]
 
@@ -214,6 +220,7 @@ class FunctionExpression(Expression):
 
 class LiteralExpression(Expression):
     """Expression returning the truth value of a stored constant."""
+
     value: Any
 
     def __init__(self, value: Any = True) -> None:
@@ -241,6 +248,7 @@ class DispatchRegistry(Generic[T]):
     candidate's constraint must also pass, and exactly one class must match.
     With no discriminator attributes, all registered constraints are tested.
     """
+
     def __init__(self, attrs: list[str] | str | None = None):
         """Create a registry with zero, one, or multiple discriminator attribute names."""
         self.attrs = attrs

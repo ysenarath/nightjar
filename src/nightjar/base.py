@@ -1,4 +1,5 @@
 """Configuration dataclasses and registration of their implementations."""
+
 from __future__ import annotations
 
 import abc
@@ -51,6 +52,7 @@ class AttributeMapMeta(abc.ABCMeta):
     The ``dispatch`` class keyword selects discriminator attributes. Remaining
     class keywords are passed to ``dataclasses.dataclass``.
     """
+
     _dispatch_registry: DispatchRegistry
 
     def __new__(
@@ -81,6 +83,7 @@ class AttributeMap(Mapping[K, V], Generic[K, V], metaclass=AttributeMapMeta):
     Subclasses become dataclasses automatically. Iteration and length reflect
     the serialized representation, including any dispatch attributes.
     """
+
     def __getitem__(self, __key: Any) -> Any:
         """Return the named attribute, raising KeyError when it does not exist."""
         if hasattr(self, __key):
@@ -120,6 +123,7 @@ class BaseConfig(AttributeMap):
     A direct subclass defines a configuration family; its subclasses register
     with that family's dispatch registry.
     """
+
     ...
 
 
@@ -130,6 +134,7 @@ class BaseModule:
     for that type. Construction converts dictionary input and then calls
     ``__post_init__``.
     """
+
     config: BaseConfig
 
     def __init_subclass__(cls, **kwargs):
@@ -176,6 +181,7 @@ class AutoModule:
     For mapping input, the factory subclass must declare a ``config`` type.
     Missing or ambiguous registrations raise ValueError.
     """
+
     def __new__(cls, config: BaseConfig) -> BaseModule:
         """Resolve the configuration and construct its registered implementation."""
         if isinstance(config, BaseConfig):
@@ -210,6 +216,7 @@ def register(*config: Type[BaseConfig]) -> Callable[[Type[T]], Type[T]]:
     must accept a configuration instance as its first constructor argument;
     it need not inherit from BaseModule.
     """
+
     def decorator(cls: Type[T]) -> Type[T]:
         """Register and return the supplied implementation class."""
         for c in config:
