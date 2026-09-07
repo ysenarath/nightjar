@@ -24,9 +24,9 @@ assert to_dict(settings) == {"retries": 3, "labels": ["daily"]}
 assert from_dict(list[int], ["1", "2"]) == [1, 2]
 ```
 
-Ordinary dataclasses convert declared fields recursively and ignore unknown
-input keys. Missing required fields fail during construction. Lists, mappings,
-and tuples recurse through Nightjar's custom conversion rules. Conversion does
+Ordinary dataclasses convert declared fields recursively and reject undeclared
+input keys with `TypeError`. Missing required fields fail during construction.
+Lists, mappings, and tuples recurse through Nightjar's custom conversion rules. Conversion does
 not select registered implementations; use `dispatch` for that.
 
 ## Pydantic models
@@ -34,7 +34,9 @@ not select registered implementations; use `dispatch` for that.
 Use your installed Pydantic version's model definitions and validators. Nightjar
 delegates model validation to that version and dumps v2 models with
 `model_dump(mode="python")` or v1 models with `dict()`. Pydantic dataclasses also
-use their native validation.
+use their native validation. Their extra-field behavior follows Pydantic
+configuration; Nightjar's plain-dataclass rejection rule does not override it.
+Configure Pydantic models with `extra="forbid"` to reject undeclared keys.
 
 Scalar coercion follows Pydantic, so behavior can differ between major versions.
 Ordinary, unannotated unions are tried in declared order until a conversion

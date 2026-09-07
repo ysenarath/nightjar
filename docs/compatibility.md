@@ -65,3 +65,14 @@ top-level conversion API without calling them directly.
 Plain classes do not inherit the old mapping interface or automatic initialization
 hooks. Use attributes to read configuration and initialize implementations in
 `__init__`, or use a dataclass with its standard `__post_init__` hook.
+
+## Undeclared fields
+
+Plain dataclass conversion now raises `TypeError` for undeclared input keys;
+older versions silently ignored them. This applies to `from_dict` and to the
+conversion performed by `dispatch`, including nested plain dataclasses.
+
+Declare matching keys such as `kind` as regular fields, not `ClassVar`
+attributes. They will then be included by `to_dict` when saving configuration.
+Pydantic models and Pydantic dataclasses continue to use their native extra-field
+policies. See [saving and rebuilding](guides/dispatch.md#save-and-rebuild).

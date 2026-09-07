@@ -23,6 +23,7 @@ from nightjar import dispatch, register
 
 @dataclass
 class CarConfig:
+    kind: str = "car"
     doors: int = 4
 
 

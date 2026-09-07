@@ -29,11 +29,13 @@ class StorageConfig:
 
 @dataclass
 class LocalConfig(StorageConfig):
+    kind: str = "local"
     path: str = "."
 
 
 @dataclass
 class MemoryConfig(StorageConfig):
+    kind: str = "memory"
     capacity: int = 100
 
 
@@ -57,8 +59,39 @@ assert storage.config.capacity == 20
 Keyword matches use literal top-level keys. Every specified key must exist and
 match its value; `kind=None` does not match a missing key. Selection happens on
 raw input, before validation. The complete input mapping is passed to conversion.
-Plain dataclasses ignore unknown keys, so `kind` need not be a dataclass field.
-Declare it as a field if it should appear in serialized output.
+Plain dataclasses reject undeclared input keys with `TypeError`. Declare matching
+keys such as `kind` as regular fields so they survive serialization.
+
+## Save and rebuild
+
+Declare every input matching key as a regular config field, including `kind`.
+Using the storage classes above, save the config and dispatch it again:
+
+```python
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from nightjar import to_dict
+
+
+with TemporaryDirectory() as directory:
+    path = Path(directory) / "storage.json"
+    path.write_text(json.dumps(to_dict(storage.config)), encoding="utf-8")
+    data = json.loads(path.read_text(encoding="utf-8"))
+
+assert data == {"kind": "memory", "capacity": 20}
+restored = dispatch(StorageConfig, data)
+assert isinstance(restored, MemoryStorage)
+assert restored.config == storage.config
+```
+
+In a new process, import the modules containing your registrations before
+loading the file. Registrations are not stored in JSON. The saved values must
+still satisfy the matching rules; validation that changes a value used by a
+predicate can change which registration matches on reload.
+
+This example uses JSON-compatible fields. See [conversion](conversion.md#python-output)
+for other Python values.
 
 ## Predicates
 
@@ -71,6 +104,9 @@ from nightjar import Field, dispatch, register
 
 @dataclass
 class BatchConfig:
+    kind: str = "batch"
+    when: str = "startup"
+    config: str = "batch"
     workers: int = 1
 
 
