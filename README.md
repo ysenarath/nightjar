@@ -70,5 +70,6 @@ The caller supplies `StorageConfig`; `kind` selects the implementation.
 Preview the documentation with `uv run --group docs mkdocs serve`.
 
 [Documentation](docs/index.md) ·
+[AI agent guide](docs/ai-agents.md) ·
 [Issues](https://github.com/ysenarath/nightjar/issues) ·
 [MIT License](LICENSE)

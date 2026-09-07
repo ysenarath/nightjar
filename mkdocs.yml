@@ -60,6 +60,7 @@ nav:
       - Conversion: reference/conversion.md
       - Predicates: reference/registry.md
       - Annotations: reference/annotations.md
+  - For AI agents: ai-agents.md
   - Building the docs: development.md
 
 watch:

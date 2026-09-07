@@ -1,0 +1,22 @@
+# Nightjar
+
+> A config dispatch library for Python. Register constructors for dataclasses or Pydantic models, then select an implementation from configuration.
+
+Use the current @register and dispatch API. BaseConfig, BaseModule, AutoModule, and DispatchRegistry have been removed. Matching fields must be declared in plain dataclasses; undeclared keys raise TypeError. Ambiguity is checked at dispatch time.
+
+## Documentation
+
+- [AI agent guide](https://ysenarath.github.io/nightjar/ai-agents/): Usage patterns, exact semantics, removed APIs, and verification commands.
+- [AI agent guide Markdown](https://raw.githubusercontent.com/ysenarath/nightjar/main/docs/ai-agents.md): Plain source for the agent guide.
+- [Getting started](https://ysenarath.github.io/nightjar/getting-started/): Select between local and memory storage implementations.
+- [Dispatch](https://ysenarath.github.io/nightjar/guides/dispatch/): Inference, expressions, shared config types, ambiguity, and persistence.
+- [Conversion](https://ysenarath.github.io/nightjar/guides/conversion/): Nested dataclasses, lists, dictionaries, and serialization.
+- [Custom converters](https://ysenarath.github.io/nightjar/guides/custom-converters/): Extend the shared converter registry.
+- [Compatibility](https://ysenarath.github.io/nightjar/compatibility/): Python 3.9+, Pydantic v1.10/v2, and migration notes.
+
+## API reference
+
+- [Registration and dispatch](https://ysenarath.github.io/nightjar/reference/configuration/)
+- [Conversion](https://ysenarath.github.io/nightjar/reference/conversion/)
+- [Predicates](https://ysenarath.github.io/nightjar/reference/registry/)
+- [Annotations](https://ysenarath.github.io/nightjar/reference/annotations/)
