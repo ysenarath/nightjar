@@ -13,7 +13,7 @@ class Vehicle(BaseModule):
 
 
 class AutoVehicle(AutoModule):
-    pass
+    config: VehicleConfig
 
 
 class CarConfig(VehicleConfig):
@@ -36,8 +36,8 @@ class Van(Vehicle):
 class TestVehicle(unittest.TestCase):
     def test_car_with_custom_doors(self):
         config = {"type": "car", "num_doors": 2}
-        vehicle_cfg = VehicleConfig.from_dict(config)
-        car = AutoVehicle(vehicle_cfg)
+        # vehicle_cfg = VehicleConfig.from_dict(config)
+        car = AutoVehicle(config)
         self.assertIsInstance(car, Car)
         assert isinstance(car, Car)  # for type checkers
         self.assertEqual(car.config.num_doors, 2)
