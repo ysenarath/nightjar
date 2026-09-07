@@ -29,6 +29,67 @@ input keys with `TypeError`. Missing required fields fail during construction.
 Lists, mappings, and tuples recurse through Nightjar's custom conversion rules. Conversion does
 not select registered implementations; use `dispatch` for that.
 
+## Nested construction
+
+Annotate fields with concrete dataclasses and typed containers. Nightjar builds
+all nested values before passing the configuration to the implementation:
+
+```python
+from __future__ import annotations
+
+from dataclasses import dataclass
+from nightjar import dispatch, register, to_dict
+
+
+@dataclass
+class Endpoint:
+    port: int
+
+
+@dataclass
+class Network:
+    primary: Endpoint
+    replicas: list[Endpoint]
+    named: dict[str, Endpoint]
+
+
+@dataclass
+class ServerConfig:
+    network: Network
+    kind: str = "server"
+
+
+@register(kind="server")
+@dataclass
+class Server:
+    config: ServerConfig
+
+
+server = dispatch(ServerConfig, {
+    "kind": "server",
+    "network": {
+        "primary": {"port": "8000"},
+        "replicas": [{"port": "8001"}],
+        "named": {"backup": {"port": "8002"}},
+    },
+})
+assert server.config.network.primary == Endpoint(8000)
+assert server.config.network.replicas == [Endpoint(8001)]
+assert server.config.network.named["backup"] == Endpoint(8002)
+assert dispatch(ServerConfig, to_dict(server.config)).config == server.config
+```
+
+Containers can be nested further, such as `dict[str, list[Endpoint]]` or
+`list[dict[str, Endpoint]]`. Dictionary keys are converted using their annotated
+type too. Bare `list` and `dict` annotations do not specify dataclass types for
+their contents.
+
+Existing dataclass instances are preserved. Missing fields use dataclass defaults
+when available; undeclared keys in nested dataclasses raise `TypeError`.
+This builds nested configuration values. It does not invoke registrations for
+nested implementations, and calling `ServerConfig(...)` directly uses the normal
+dataclass constructor without Nightjar conversion.
+
 ## Pydantic models
 
 Use your installed Pydantic version's model definitions and validators. Nightjar
