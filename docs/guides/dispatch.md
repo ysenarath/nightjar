@@ -1,5 +1,17 @@
 # Dispatch
 
+## Registration
+
+`@register(...)` infers the config type from a class's `config` attribute or a
+function's first positional parameter named `config`. Use `@register()` when
+no conditions are needed. Place `@register` above `@dataclass`.
+
+Pass a type explicitly with `@register(ConfigType, ...)` to override inference
+or register a constructor without annotations. Inherited class annotations work;
+missing, unresolved, or union annotations raise `TypeError`. Postponed annotations
+must resolve in the defining module. For local forward references, pass the type
+explicitly.
+
 ## Configuration families
 
 Pass a common configuration class to select among its registered subclasses.
@@ -25,13 +37,13 @@ class MemoryConfig(StorageConfig):
     capacity: int = 100
 
 
-@register(LocalConfig, kind="local")
+@register(kind="local")
 @dataclass
 class LocalStorage:
     config: LocalConfig
 
 
-@register(MemoryConfig, kind="memory")
+@register(kind="memory")
 @dataclass
 class MemoryStorage:
     config: MemoryConfig
@@ -50,7 +62,7 @@ Declare it as a field if it should appear in serialized output.
 
 ## Predicates
 
-Pass a `Field` expression through `when` for rules beyond exact equality:
+Pass positional `Field` expressions for rules beyond exact equality:
 
 ```python
 from dataclasses import dataclass
@@ -62,8 +74,8 @@ class BatchConfig:
     workers: int = 1
 
 
-@register(BatchConfig, when=Field("kind").str.eq("batch", case=False))
-def build_batch(config):
+@register(Field("kind").str.eq("batch", case=False))
+def build_batch(config: BatchConfig):
     return config
 
 
@@ -72,10 +84,22 @@ assert isinstance(config, BatchConfig)
 assert config.workers == 3
 ```
 
-Constructors can be functions or classes; they receive one converted
-configuration argument. Combine keyword matches and `when` to require both.
-If `when` is omitted, Nightjar uses the configuration type's `__match__`
-expression when present.
+All positional expressions and keyword matches must pass. Every keyword names
+an input field, including `when` and `config`:
+
+```python
+@register(Field("workers") > 0, when="startup", config="batch")
+def start_batch(config: BatchConfig):
+    return config
+
+
+assert dispatch(
+    BatchConfig, {"workers": 2, "when": "startup", "config": "batch"}
+).workers == 2
+```
+
+Keyword matches become presence-and-equality expressions. Dispatch checks
+registrations in a loop and requires a unique match.
 
 Compose comparisons with `&`, `|`, and `~`, and parenthesize comparisons.
 `Field("key").exists()` checks presence, including a value of `None`.
@@ -99,8 +123,8 @@ class JobConfig(BaseModel):
     workers: int = 1
 
 
-@register(JobConfig, kind="job")
-def build_job(config):
+@register(kind="job")
+def build_job(config: JobConfig):
     return config
 
 
@@ -113,9 +137,10 @@ Pydantic version and model configuration.
 
 ## Registration and errors
 
-`@register(FirstConfig, SecondConfig)` associates one constructor with multiple
-configuration types. Registrations are shared within the process. Registering
-the same constructor and configuration type again replaces their selection rule.
+Stack `@register(FirstConfig, ...)` and `@register(SecondConfig, ...)` to
+associate one constructor with multiple configuration types. Registrations are
+shared within the process; re-registering the same constructor and type replaces
+its conditions.
 
 Mapping dispatch requires exactly one matching registration. Missing or
 ambiguous matches raise `ValueError`; validation and constructor errors propagate.

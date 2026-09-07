@@ -50,12 +50,15 @@ top-level conversion API without calling them directly.
 - Replace configuration subclasses of `BaseConfig` with plain `@dataclass`
   classes or Pydantic models. Decorate each plain dataclass subclass explicitly.
 - Replace implementation subclasses of `BaseModule` with plain classes that
-  accept a configuration, and apply `@register(ConfigType, kind="value")`.
+  accept a configuration. Annotate `config` and use `@register(kind="value")`,
+  or pass the config type explicitly.
 - Replace `AutoModule(config)` with `dispatch(config)`.
 - Replace family-level `Config.from_dict(data)` followed by construction with
   `dispatch(Config, data)`. For conversion alone, use `from_dict(ConcreteConfig, data)`.
 - Replace class-level `dispatch=["kind"]` with keyword matches on `@register`.
-  Move predicates to `when=...`, or retain a configuration's `__match__` expression.
+  Pass predicates as positional expressions. The old `when=`
+  parameter and class-level `__match__` convention no longer define predicates;
+  `when=` now matches an input field named `when`.
 - Remove the `dispatch` argument from `to_dict`. Registration discriminators are
   no longer injected into output; use declared fields when they should persist.
 

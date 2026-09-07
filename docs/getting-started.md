@@ -19,7 +19,7 @@ class CarConfig:
     doors: int = 4
 
 
-@register(CarConfig, kind="car")
+@register(kind="car")
 @dataclass
 class Car:
     config: CarConfig
@@ -38,8 +38,8 @@ assert dispatch(config).config is config
 ```
 
 `kind="car"` is a required input match, checked before conversion. Nightjar
-converts the data to `CarConfig` and calls `Car(config)`. The decorator preserves
-`Car`; no Nightjar base class is needed.
+infers `CarConfig` from the `config` annotation, converts the data, and calls
+`Car(config)`. The decorator preserves `Car`; no Nightjar base class is needed.
 
 With an existing configuration instance, `dispatch(config)` selects the unique
 constructor registered for its exact type. It preserves the instance and does

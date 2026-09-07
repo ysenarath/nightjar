@@ -17,26 +17,33 @@ uv add nightjar
 ## Usage
 
 ```python
-from pydantic import BaseModel
-from nightjar import from_dict, to_dict
+from dataclasses import dataclass
+from nightjar import dispatch, register
 
-class Item(BaseModel):
-    count: int
-    enabled: bool = True
 
-item = from_dict(Item, {"count": "4", "enabled": "false"})
-assert to_dict(item) == {"count": 4, "enabled": False}
+@dataclass
+class CarConfig:
+    doors: int = 4
+
+
+@register(kind="car")
+@dataclass
+class Car:
+    config: CarConfig
+
+
+car = dispatch(CarConfig, {"kind": "car", "doors": "2"})
+assert car.config.doors == 2
 ```
 
-Use `@register(ConfigType, kind="value")` and `dispatch(ConfigType, data)` to
-construct implementations from configuration. No Nightjar base classes required.
+`@register` infers the config type from the annotation. Use positional `Field`
+expressions for more complex matching rules.
 
 ## Compatibility
 
 - Python 3.9+: use `from __future__ import annotations` for `A | B` annotations on 3.9.
 - Pydantic v1.10 and v2 are supported without an exact version pin. Conversion
   behavior follows the installed version; uv resolves a compatible release.
-- Import conversion helpers from `nightjar`; `nightjar.serializers` has been removed.
 
 Preview the documentation with `uv run --group docs mkdocs serve`.
 

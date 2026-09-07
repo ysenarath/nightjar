@@ -10,17 +10,23 @@ uv add nightjar
 ```
 
 ```python
-from pydantic import BaseModel
-from nightjar import from_dict, to_dict
+from dataclasses import dataclass
+from nightjar import dispatch, register
 
 
-class Item(BaseModel):
-    count: int
-    enabled: bool = True
+@dataclass
+class CarConfig:
+    doors: int = 4
 
 
-item = from_dict(Item, {"count": "4", "enabled": "false"})
-assert to_dict(item) == {"count": 4, "enabled": False}
+@register(kind="car")
+@dataclass
+class Car:
+    config: CarConfig
+
+
+car = dispatch(CarConfig, {"kind": "car", "doors": "2"})
+assert car.config.doors == 2
 ```
 
 - [Get started](getting-started.md) with typed configuration and object construction.
