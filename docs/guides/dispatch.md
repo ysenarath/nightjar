@@ -178,8 +178,63 @@ associate one constructor with multiple configuration types. Registrations are
 shared within the process; re-registering the same constructor and type replaces
 its conditions.
 
-Mapping dispatch requires exactly one matching registration. Missing or
-ambiguous matches raise `ValueError`; validation and constructor errors propagate.
+### Ambiguity is checked at dispatch time
+
+Registration accepts overlapping rules, including identical rules for different
+implementations. It does not check for ambiguity when a class or function is
+defined. Each mapping dispatch evaluates the registered rules against its input
+and requires exactly one match. Zero or multiple matches raise `ValueError`
+before an implementation constructor is called. Registration order does not
+break ties.
+
+This example is independent of the storage family above:
+
+```python
+from dataclasses import dataclass
+from nightjar import dispatch, register
+
+
+@dataclass
+class SharedConfig:
+    kind: str
+    path: str = "."
+
+
+@register(kind="local")
+@dataclass
+class Local:
+    config: SharedConfig
+
+
+@register(kind="remote")
+@dataclass
+class Remote:
+    config: SharedConfig
+
+
+@register(kind="remote")
+@dataclass
+class AlternativeRemote:
+    config: SharedConfig
+
+
+# All three registrations succeed. Only the remote input is ambiguous.
+assert isinstance(dispatch(SharedConfig, {"kind": "local"}), Local)
+
+try:
+    dispatch(SharedConfig, {"kind": "remote"})
+except ValueError as error:
+    assert "found 2" in str(error)
+else:
+    raise AssertionError("Expected an ambiguous dispatch")
+```
+
+To distinguish both remote implementations, give them additional matching
+conditions. Validation and constructor errors propagate after a unique match
+has been selected.
+
+### Dispatching existing instances
+
 Multiple constructors for the same configuration type can use distinct mapping
 rules, but dispatching an instance of that type is ambiguous: instance dispatch
 uses the exact type without evaluating rules. `dispatch(ConfigType, instance)`
