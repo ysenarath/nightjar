@@ -1,12 +1,8 @@
-"""Typed configuration, predicate dispatch, and extensible object conversion."""
+"""A config dispatch library.
 
-from nightjar.base import (
-    AutoModule,
-    BaseConfig,
-    BaseModule,
-    dispatch,
-    register,
-)
+Use register and dispatch with plain dataclasses or Pydantic models.
+"""
+
 from nightjar.conversion import (
     Context,
     Converter,
@@ -15,14 +11,12 @@ from nightjar.conversion import (
     to_dict,
 )
 from nightjar.conversion import registry as converter_registry
+from nightjar.dispatching import dispatch, register
 from nightjar.registry import Field
 
 __version__ = "0.0.8"
 
 __all__ = [
-    "AutoModule",
-    "BaseConfig",
-    "BaseModule",
     "Context",
     "Converter",
     "ConverterRegistry",

@@ -1,4 +1,4 @@
-"""Pydantic validation with Nightjar dispatch and conversion hooks."""
+"""Pydantic validation with recursive conversion hooks."""
 
 from __future__ import annotations
 
@@ -78,8 +78,8 @@ def validate(typ: Any, value: Any) -> Any:
 
     Existing model instances are returned unchanged. Legacy v1 dataclasses
     use the v1 API even within a v2 installation. Coercion, validation errors,
-    and schema support follow the selected Pydantic API; Nightjar dispatch
-    and custom converter hooks are applied by from_dict, not this helper.
+    and schema support follow the selected Pydantic API. Custom converter hooks
+    are applied by from_dict, not this helper.
     """
     if is_model_type(typ):
         if isinstance(value, typ):
@@ -116,7 +116,7 @@ class Context:
     """Immutable state shared by a conversion call.
 
     Carries the converter registry, annotation namespaces, current generic
-    arguments, and whether dispatch is enabled for the current object.
+    arguments.
     Use encode and decode to recurse through registered converters.
     """
 
@@ -124,13 +124,10 @@ class Context:
     globalns: Any = None
     localns: Any = None
     type_args: tuple = ()
-    dispatch: bool = True
 
     def encode(self, obj: Any) -> Any:
-        """Encode a child with dispatch enabled and parent generic arguments cleared."""
-        return self.registry.encode(
-            obj, replace(self, dispatch=True, type_args=())
-        )
+        """Encode a child with parent generic arguments cleared."""
+        return self.registry.encode(obj, replace(self, type_args=()))
 
     def decode(self, typ: Any, val: Any) -> Any:
         # Child types must not inherit their parent's generic arguments.
@@ -273,14 +270,13 @@ class SimpleTypeConverter(Converter):
 
 
 class _DefaultConverter(Converter):
-    """Keep recursive dispatch here; delegate value validation to Pydantic."""
+    """Convert containers recursively and delegate value validation to Pydantic."""
 
     @staticmethod
     def matches_encode(obj: Any, ctx: Context) -> bool:
         """Recognize structured values handled by the built-in encoder."""
         return (
-            (ctx.dispatch and hasattr(obj, "_dispatch_registry"))
-            or is_model_instance(obj)
+            is_model_instance(obj)
             or is_dataclass(obj)
             or isinstance(obj, (tuple, list, Mapping))
         )
@@ -296,15 +292,12 @@ class _DefaultConverter(Converter):
             or typ is None
             or typ is Union
             or typ is UnionType
-            or hasattr(typ, "_dispatch_registry")
             or is_dataclass(typ)
         )
 
     @staticmethod
     def encode(obj: Any, ctx: Context) -> Any:
-        """Encode structured values while preserving recursive dispatch hooks."""
-        if ctx.dispatch and hasattr(obj, "_dispatch_registry"):
-            return obj.__class__._dispatch_registry.dump(obj)
+        """Encode structured values using registered conversion hooks."""
         if is_model_instance(obj):
             return ctx.encode(dump_model(obj))
         if is_dataclass(obj):
@@ -327,7 +320,7 @@ class _DefaultConverter(Converter):
 
     @staticmethod
     def decode(typ: Any, val: Any, ctx: Context) -> Any:
-        """Resolve annotations and dispatch before delegating leaf validation."""
+        """Resolve annotations before delegating leaf validation."""
         origin = get_origin(typ)
         if origin is not None:
             return ctx.registry.decode(
@@ -349,10 +342,6 @@ class _DefaultConverter(Converter):
                     continue
             msg = f"could not convert to any type in Union: {typ}"
             raise ValueError(msg)
-        if hasattr(typ, "_dispatch_registry"):
-            return typ._dispatch_registry.load(
-                val, globalns=ctx.globalns, localns=ctx.localns
-            )
         if is_model_type(typ):
             return validate(typ, val)
         if is_dataclass(typ):
@@ -431,16 +420,13 @@ registry = ConverterRegistry()
 registry.register(_DefaultConverter())
 
 
-def to_dict(obj: Any, dispatch: bool = True) -> Any:
+def to_dict(obj: Any) -> Any:
     """Convert an object to a nested Python representation.
 
     Parameters
     ----------
     obj : object
         Value to encode through the shared converter registry.
-    dispatch : bool, optional
-        Whether to use the root object's dispatch registry. Defaults to True.
-        Nested objects still use dispatch when this is False.
 
     Returns
     -------
@@ -454,7 +440,7 @@ def to_dict(obj: Any, dispatch: bool = True) -> Any:
     Custom encoders and native Pydantic model serialization may return other
     Python values.
     """
-    ctx = Context(registry=registry, dispatch=dispatch)
+    ctx = Context(registry=registry)
     return registry.encode(obj, ctx)
 
 
@@ -476,12 +462,12 @@ def from_dict(
     Returns
     -------
     object
-        The converted value or the selected registered configuration subtype.
+        The converted value.
 
     Notes
     -----
     Custom converters take priority according to registry order. Nightjar
-    handles dispatch and recursive containers; Pydantic validates remaining
+    handles recursive containers; Pydantic validates remaining
     values. Ordinary unions try alternatives in order and return the first
     successful conversion. Pydantic coercion depends on its installed version.
     Conversion errors propagate unless a later union alternative succeeds.
