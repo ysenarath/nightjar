@@ -1,4 +1,5 @@
 import unittest
+from operator import or_
 
 from nightjar import AutoModule, BaseConfig, BaseModule, Field
 
@@ -11,8 +12,9 @@ class Vehicle(BaseModule, AutoModule):
 
 
 class CarConfig(VehicleConfig):
-    __match__ = Field("type").str.eq("car", case=False) | (
-        Field("num_doors") == 4
+    __match__ = or_(
+        Field("type").str.eq("car", case=False),
+        Field("num_doors") == 4,
     )
 
     type: str = "car"
@@ -34,12 +36,19 @@ class Van(Vehicle):
 
 
 class BicycleConfig(VehicleConfig):
-    __match__ = (Field("type").str.lower() == "bicycle") | (
-        Field("num_doors") == 0
+    # fmt: off
+    __match__ = (
+        (Field("type").str.lower() == "bicycle")
+        | (Field("num_doors") == 0)
     )
+    # fmt: on
 
-    type: str
+    type: str = "bicycle"
     num_doors: int = 0
+
+
+class Bicycle(Vehicle):
+    config: BicycleConfig
 
 
 class TestVehicle(unittest.TestCase):
@@ -57,6 +66,16 @@ class TestVehicle(unittest.TestCase):
         v = Vehicle({"type": "van"})
         self.assertIsInstance(v, Van)
         assert isinstance(v, Van)  # for type checkers
+
+    def test_bicycle_by_type(self):
+        v = Vehicle({"type": "BICYCLE"})
+        self.assertIsInstance(v, Bicycle)
+        assert isinstance(v, Bicycle)  # for type checkers
+
+    def test_bicycle_by_num_doors(self):
+        v = Vehicle({"num_doors": 0})
+        self.assertIsInstance(v, Bicycle)
+        assert isinstance(v, Bicycle)  # for type checkers
 
 
 if __name__ == "__main__":

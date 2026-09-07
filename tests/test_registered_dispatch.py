@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import unittest
 from dataclasses import dataclass
 
@@ -8,9 +10,11 @@ class VehicleConfig(BaseConfig): ...
 
 
 class CarConfig(VehicleConfig):
-    __match__ = Field("type").str.eq("car", case=False) | (
-        Field("num_doors") == 4
-    )
+    # fmt: off
+    __match__ = \
+        Field("type").str.eq("car", case=False) \
+        | (Field("num_doors") == 4)
+    # fmt: on
 
     type: str = "car"
     num_doors: int = 4
@@ -23,17 +27,21 @@ class Car:
 
 
 class VanConfig(VehicleConfig):
-    __match__ = (
-        Field("type").str.eq("van", case=False) & ~Field("num_doors").exists()
-    )
+    # fmt: off
+    __match__ = \
+        Field("type").str.eq("van", case=False) \
+        & ~Field("num_doors").exists()
+    # fmt: on
 
     type: str = "van"
 
 
 class AltVanConfig(VehicleConfig):
-    __match__ = Field("type").str.eq("van", case=False) & (
-        Field("num_doors").exists()
-    )
+    # fmt: off
+    __match__ = \
+        Field("type").str.eq("van", case=False) \
+        & Field("num_doors").exists()
+    # fmt: on
 
     type: str = "van"
     num_doors: int = 4
