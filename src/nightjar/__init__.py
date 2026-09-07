@@ -14,7 +14,7 @@ from nightjar.conversion import registry as converter_registry
 from nightjar.dispatching import dispatch, register
 from nightjar.registry import Field
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "Context",
