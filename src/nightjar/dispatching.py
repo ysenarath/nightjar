@@ -5,6 +5,7 @@ Examples
 >>> from dataclasses import dataclass
 >>> @dataclass
 ... class Settings:
+...     kind: str = "worker"
 ...     count: int = 1
 >>> @register(Settings, kind="worker")
 ... @dataclass

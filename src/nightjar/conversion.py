@@ -374,7 +374,7 @@ def _decode_dataclass(typ, val, ctx):
     """Build a dataclass from input data or preserve an existing instance.
 
     Pydantic dataclasses run their native validation. Plain dataclasses convert
-    known fields recursively and ignore unknown keys.
+    declared fields recursively and reject unknown keys.
     """
     if isinstance(val, typ):
         return val
@@ -384,10 +384,13 @@ def _decode_dataclass(typ, val, ctx):
         msg = f"could not convert to dataclass: {typ}, {val}"
         raise ValueError(msg)
     hints = get_dataclass_type_hints(typ)
+    unknown = val.keys() - hints.keys()
+    if unknown:
+        names = ", ".join(sorted(map(str, unknown)))
+        msg = f"Undeclared fields for {typ.__name__} include {names}"
+        raise TypeError(msg)
     return typ(**{
-        key: ctx.decode(hints[key], value)
-        for key, value in val.items()
-        if key in hints
+        key: ctx.decode(hints[key], value) for key, value in val.items()
     })
 
 
