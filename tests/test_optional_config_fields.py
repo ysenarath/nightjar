@@ -2,21 +2,20 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import dataclass
-from typing import ClassVar
 
 from nightjar import dispatch, from_dict, register
 
 
 @dataclass
 class KnowledgeGraphConfig:
-    type: ClassVar[str]
+    pass
 
 
 @dataclass
 class WikkipediaGraphConfig(KnowledgeGraphConfig):
-    type: ClassVar[str] = "wikkipedia"
     # parameters specific to KnowledgeGraph
     predicates: list[str] | None
+    type: str = "wikkipedia"
 
 
 @register(WikkipediaGraphConfig, type="wikkipedia")

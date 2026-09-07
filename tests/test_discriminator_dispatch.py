@@ -1,18 +1,19 @@
+import json
 import unittest
 from dataclasses import dataclass
-from typing import ClassVar, Union
+from typing import Union
 
-from nightjar import Field, dispatch, register
+from nightjar import Field, dispatch, register, to_dict
 
 
 @dataclass
 class VehicleConfig:
-    type: ClassVar[str]
+    pass
 
 
 @dataclass
 class CarConfig(VehicleConfig):
-    type: ClassVar[str] = "car"
+    type: str = "car"
     num_doors: int = 4
 
 
@@ -24,7 +25,7 @@ class Car:
 
 @dataclass
 class VanConfig(VehicleConfig):
-    type: ClassVar[str] = "van"
+    type: str = "van"
 
 
 @register(type="van")
@@ -41,12 +42,22 @@ class TestVehicle(unittest.TestCase):
         assert isinstance(car, Car)  # for type checkers
         self.assertEqual(car.config.num_doors, 2)
 
+    def test_saved_config_rebuilds_implementation(self):
+        original = dispatch(VehicleConfig, {"type": "car", "num_doors": "2"})
+        data = json.loads(json.dumps(to_dict(original.config)))
+        self.assertEqual(data, {"type": "car", "num_doors": 2})
+        restored = dispatch(VehicleConfig, data)
+        self.assertIsInstance(restored, Car)
+        self.assertEqual(restored.config, original.config)
+
 
 class TestRegistrationConditions(unittest.TestCase):
     def test_expressions_and_keyword_fields_must_all_match(self):
         @dataclass
         class Config:
             count: int = 1
+            when: str = "startup"
+            config: str = "worker"
 
         @register(
             Config,
@@ -72,7 +83,7 @@ class TestRegistrationConditions(unittest.TestCase):
     def test_none_requires_present_keyword(self):
         @dataclass
         class Config:
-            pass
+            when: None = None
 
         @register(Config, when=None)
         def build(config):
@@ -99,6 +110,7 @@ class TestInferredRegistration(unittest.TestCase):
         @dataclass
         class Config:
             count: int = 1
+            when: str = "start"
 
         @register(Field("count") > 0, when="start")
         def build(config: Config):

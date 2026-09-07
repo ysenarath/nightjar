@@ -67,11 +67,17 @@ class TestNamedTupleSerialization(unittest.TestCase):
 
 
 class TestUnknownDataclassKeys(unittest.TestCase):
-    """Issue: from_dict's dataclass branch doesn't filter unknown keys."""
+    """Undeclared input fields must not disappear during conversion."""
 
-    def test_unknown_keys_are_ignored(self):
-        result = from_dict(Point, {"x": 1, "y": 2, "z": 99})
-        self.assertEqual(result, Point(x=1, y=2))
+    def test_unknown_keys_are_rejected(self):
+        with self.assertRaisesRegex(
+            TypeError, "Undeclared fields for Point include z"
+        ):
+            from_dict(Point, {"x": 1, "y": 2, "z": 99})
+
+    def test_declared_fields_round_trip(self):
+        data = {"x": 1, "y": 2}
+        self.assertEqual(to_dict(from_dict(Point, data)), data)
 
 
 if __name__ == "__main__":

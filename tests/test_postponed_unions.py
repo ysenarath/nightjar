@@ -5,7 +5,7 @@ import typing
 import unittest
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Annotated, ClassVar, ForwardRef, Literal, Optional, Union
+from typing import Annotated, ForwardRef, Literal, Optional, Union
 
 from nightjar import dispatch, from_dict, register
 from nightjar.annotations import get_annotations, get_dataclass_type_hints
@@ -25,13 +25,13 @@ class NestedPayload:
 
 @dataclass
 class UnionConfig:
-    kind: ClassVar[str]
+    pass
 
 
 @dataclass
 class ConcreteConfig(UnionConfig):
-    kind: ClassVar[str] = "concrete"
     values: list[str] | None
+    kind: str = "concrete"
 
 
 @register(kind="concrete")
